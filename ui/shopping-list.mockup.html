@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TIDY — 여름 구매 리스트</title>
+<style>
+  :root{
+    --bg:#0f1115; --panel:#171a21; --panel-2:#1e222b; --border:#2a2f3a;
+    --text:#e6e9ef; --muted:#9aa4b2; --faint:#6b7482; --accent:#6ea8fe;
+    --good:#3fb950; --gap:#e0a138; --gap-bg:rgba(224,161,56,.12);
+    --summer:#ffcf5c; --summer-bg:rgba(255,207,92,.10);
+    --radius:14px;
+    --c-WHITE:#f5f6f8; --c-GRAY:#9aa0a6; --c-BLACK:#20242c;
+    --c-RED:#c0392b; --c-ORANGE:#e67e22; --c-YELLOW:#f1c40f; --c-GREEN:#27ae60;
+    --c-TEAL:#17a2b8; --c-BLUE:#2e86de; --c-NAVY:#2c3e66; --c-PURPLE:#8e44ad;
+    --c-PINK:#e84393; --c-BROWN:#8d6e63; --c-BEIGE:#d9c7a8; --c-KHAKI:#7a7a52;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Pretendard","Apple SD Gothic Neo","Malgun Gothic",sans-serif;background:var(--bg);color:var(--text);padding:28px;line-height:1.5}
+  .wrap{max-width:1100px;margin:0 auto}
+  a.back{color:var(--faint);font-size:13px;text-decoration:none;cursor:pointer}
+  a.back:hover{color:var(--text)}
+  header{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin:10px 0 18px;flex-wrap:wrap}
+  h1{font-size:22px;display:flex;align-items:center;gap:10px}
+  .sub{color:var(--muted);font-size:13px;margin-top:3px}
+  .seasonpill{background:var(--summer-bg);color:var(--summer);border:1px solid rgba(255,207,92,.3);padding:4px 12px;border-radius:99px;font-size:13px;font-weight:700}
+
+  /* 종류별 합계 (한눈에) */
+  .totrow{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+  .tot{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:12px 18px;flex:1;min-width:120px}
+  .tot .k{color:var(--faint);font-size:12px;font-weight:600}
+  .tot .v{font-size:24px;font-weight:800;margin-top:2px}
+  .tot .v small{font-size:13px;color:var(--muted);font-weight:600}
+  .tot.grand{border-color:rgba(224,161,56,.35);background:linear-gradient(180deg,var(--gap-bg),var(--panel))}
+  .tot.grand .v{color:var(--gap)}
+
+  .mod{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;margin-bottom:12px}
+  .mod.hold{opacity:.55}
+  .mhead{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+  .mhead .nm{font-size:15px;font-weight:700}
+  .mhead .brk{color:var(--faint);font-size:12px}
+  .mhead .cnt{margin-left:auto;font-size:12px;font-weight:800;color:var(--gap);background:var(--gap-bg);padding:3px 10px;border-radius:99px}
+  .mhead .cnt.zero{color:var(--faint);background:var(--panel-2)}
+
+  /* 색상 × 종류 × 수량 — 한 줄에 하나 */
+  .item{display:flex;align-items:center;gap:0;padding:9px 4px;border-bottom:1px solid rgba(255,255,255,.045)}
+  .item:last-child{border-bottom:none}
+  .swatch{display:flex;align-items:center;gap:8px;width:140px;flex:none}
+  .chip{width:22px;height:22px;border-radius:6px;border:1px solid rgba(255,255,255,.18);flex:none}
+  .chip.accent{border-radius:50%}
+  .cname{font-weight:700;font-size:13px}
+  .type{flex:1;font-size:13px;color:var(--text)}
+  .type small{color:var(--faint);margin-left:6px}
+  .q{font-weight:800;font-size:16px;color:var(--gap);white-space:nowrap;min-width:44px;text-align:right}
+
+  .have{color:var(--faint);font-size:11.5px;margin-top:9px}
+  .have b{color:var(--good)}
+  .disposal{background:var(--panel);border:1px solid rgba(240,97,109,.3);border-radius:var(--radius);padding:14px 16px;margin-top:6px}
+  .disposal h3{font-size:13px;color:#f0616d;margin-bottom:8px}
+  footer{margin-top:22px;color:var(--faint);font-size:12px;text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="dashboard.mockup.html">← 대시보드</a>
+  <header>
+    <div>
+      <h1>🛒 여름 구매 리스트 <span class="seasonpill">Phase 1</span></h1>
+      <div class="sub">색상 × 종류 × 수량 — 한 줄에 하나. 정본: 06-shopping-list.md</div>
+    </div>
+    <div class="sub">현재 계절 · 여름 (2026-07-06)</div>
+  </header>
+
+  <!-- 종류별 합계 -->
+  <div class="totrow" id="totrow"></div>
+
+  <div id="list"></div>
+
+  <div class="disposal">
+    <h3>🗑 처분 대상</h3>
+    <div class="item" style="border:none">
+      <div class="swatch"><span class="chip" style="background:var(--c-GRAY)"></span><span class="cname">그레이</span></div>
+      <div class="type">아식스 러닝화 <small>운동 · 낡음, 써코니 중복</small></div>
+      <div class="q" style="color:#f0616d">처분</div>
+    </div>
+  </div>
+
+  <footer>구매 시 inventory.json에 register() → 대시보드 부족분 자동 감소 · 홈웨어는 보유 확인 후 결정(보류)</footer>
+</div>
+
+<script>
+const KO={WHITE:'화이트',GRAY:'그레이',BLACK:'블랙',RED:'레드',ORANGE:'러스트',YELLOW:'형광',GREEN:'그린',TEAL:'틸',BLUE:'샴브레이',NAVY:'네이비',BROWN:'브라운',BEIGE:'베이지',KHAKI:'카키'};
+const CAT_KO={TOP:'상의',BOTTOM:'하의',SHOES:'신발',SOCKS:'양말',ACC:'부속'};
+// 색상 × 종류 × 수량 (06 마스터 확정분을 색상 단위로 분해)
+const BUY=[
+  {mod:'유니폼', brk:'상의6·하의1', have:'네이비 파티그 · AF1(공용 신발)', items:[
+    {cat:'TOP', color:'WHITE', cname:'화이트', type:'무지 반팔티', note:'헤비 코튼', q:4},
+    {cat:'TOP', color:'NAVY',  cname:'네이비', type:'무지 반팔티', note:'시그니처', q:2},
+    {cat:'BOTTOM', color:'GRAY', cname:'그레이', type:'치노 반바지', note:'통 넉넉 스트레이트', q:1},
+  ]},
+  {mod:'주말 외출', brk:'상의4·하의1', have:'올리브 파티그 · 그레이 치노', items:[
+    {cat:'TOP', color:'WHITE', cname:'화이트', type:'무지 반팔티', note:'base·만능', q:1},
+    {cat:'TOP', color:'BEIGE', cname:'에크루', type:'반팔티', note:'온기', q:1},
+    {cat:'TOP', color:'ORANGE', cname:'러스트', type:'반팔티', note:'accent 1색', q:1, acc:true},
+    {cat:'TOP', color:'BLUE', cname:'샴브레이', type:'반팔 오픈칼라 셔츠', note:'아메카지', q:1},
+    {cat:'BOTTOM', color:'BEIGE', cname:'베이지', type:'치노 쇼츠', note:'반바지', q:1},
+  ]},
+  {mod:'운동', brk:'상의5·하의3', have:'나이키 덩크 · 써코니', items:[
+    {cat:'TOP', color:'YELLOW', cname:'형광', type:'흡한속건 티', note:'야간 시인성', q:1, acc:true},
+    {cat:'TOP', color:'WHITE', cname:'화이트', type:'흡한속건 티', note:'열반사', q:1},
+    {cat:'TOP', color:'BLACK', cname:'블랙', type:'흡한속건 티', note:'헬스·주간', q:1},
+    {cat:'TOP', color:'GRAY', cname:'그레이', type:'흡한속건 티', note:'로테이션', q:2},
+    {cat:'BOTTOM', color:'BLACK', cname:'블랙', type:'기능성 반바지', note:'라이너', q:1},
+    {cat:'BOTTOM', color:'GRAY', cname:'그레이', type:'기능성 반바지', note:'', q:1},
+    {cat:'BOTTOM', color:'NAVY', cname:'네이비', type:'기능성 반바지', note:'', q:1},
+  ]},
+  {mod:'공용 신발', brk:'신발1', have:'AF1(보유)', items:[
+    {cat:'SHOES', color:'GRAY', cname:'그레이', type:'뉴발란스 스웨이드 러너', note:'볼륨 밑창', q:1},
+  ]},
+  {mod:'이너/언더', brk:'양말9~11', have:'속옷 8 · 흰 미드삭스 10+', items:[
+    {cat:'SOCKS', color:'GRAY', cname:'그레이', type:'색 양말(일상)', note:'만능 뉴트럴', q:3},
+    {cat:'SOCKS', color:'NAVY', cname:'네이비', type:'색 양말(일상)', note:'바지 톤온톤', q:2},
+    {cat:'SOCKS', color:'BEIGE', cname:'어스톤', type:'색 양말', note:'선택', q:'1~2'},
+    {cat:'SOCKS', color:'WHITE', cname:'화이트', type:'스포츠 양말', note:'러닝·헬스', q:4},
+  ]},
+  {mod:'등산', brk:'양말2~3', have:'등산화·셸2·조거(보유) · 상의는 운동 공유', items:[
+    {cat:'SOCKS', color:'GRAY', cname:'그레이', type:'울 혼방 쿠션 등산양말', note:'물집·방수', q:'2~3'},
+  ]},
+  {mod:'정장', brk:'상의1·부속3', have:'정장셋·구두·흰셔츠·검정셔츠(보유)', items:[
+    {cat:'TOP', color:'WHITE', cname:'화이트', type:'드레스셔츠', note:'여벌(경조사)', q:1},
+    {cat:'ACC', color:'BLACK', cname:'블랙', type:'넥타이', note:'무광(장례)', q:1},
+    {cat:'ACC', color:'NAVY', cname:'네이비', type:'넥타이', note:'격식·결혼', q:1},
+    {cat:'ACC', color:'BLACK', cname:'블랙', type:'가죽 벨트', note:'', q:1},
+  ]},
+  {mod:'홈웨어', brk:'보류', have:'보유 확인 후 결정', hold:true, items:[]},
+];
+
+// 종류별 합계 (범위는 하한으로 집계)
+const totals={TOP:0,BOTTOM:0,SHOES:0,SOCKS:0,ACC:0}; let grand=0;
+BUY.forEach(m=>m.items.forEach(it=>{const n=typeof it.q==='number'?it.q:parseInt(it.q);totals[it.cat]+=n;grand+=n;}));
+const totrow=document.getElementById('totrow');
+totrow.innerHTML=`<div class="tot grand"><div class="k">구매 합계</div><div class="v">${grand}~${grand+3}<small> 점</small></div></div>`+
+  Object.keys(CAT_KO).map(c=>`<div class="tot"><div class="k">${CAT_KO[c]}</div><div class="v">${totals[c]}<small> 벌</small></div></div>`).join('');
+
+// 모듈별 색상×종류×수량
+const list=document.getElementById('list');
+list.innerHTML=BUY.map(m=>{
+  const rows=m.items.map(it=>`<div class="item">
+    <div class="swatch"><span class="chip ${it.acc?'accent':''}" style="background:var(--c-${it.color})"></span><span class="cname">${it.cname}</span></div>
+    <div class="type">${it.type}${it.note?`<small>${it.note}</small>`:''}</div>
+    <div class="q">×${it.q}</div></div>`).join('');
+  const cnt=m.hold?'보류':(m.brk);
+  return `<div class="mod${m.hold?' hold':''}">
+    <div class="mhead"><span class="nm">${m.mod}</span><span class="brk">${m.hold?'':'· '+m.brk}</span><span class="cnt ${m.hold?'zero':''}">${m.hold?'보류':'구매'}</span></div>
+    ${rows||'<div class="have" style="margin:0">구매 0 — 보유/보류</div>'}
+    ${m.have?`<div class="have">보유 활용: <b>${m.have}</b></div>`:''}
+  </div>`;
+}).join('');
+</script>
+</body>
+</html>

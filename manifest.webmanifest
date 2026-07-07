@@ -1,0 +1,15 @@
+{
+  "name": "TIDY 옷장",
+  "short_name": "TIDY",
+  "description": "목적 모듈 기반 개인 의류 관리 — 쇼핑 리스트·옷장·정리",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0f1115",
+  "theme_color": "#0f1115",
+  "lang": "ko",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
