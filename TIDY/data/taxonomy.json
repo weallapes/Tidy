@@ -1,0 +1,32 @@
+{
+  "_comment": "정규화 사전. 색상 동의어·역할 키워드·모듈 키워드. 알고리즘: 01-design.md §3.1~3.4",
+  "version": "0.1",
+  "colorSynonyms": {
+    "곤색": "NAVY", "남색": "NAVY", "네이비": "NAVY",
+    "먹색": "BLACK", "블랙": "BLACK", "검정": "BLACK",
+    "화이트": "WHITE", "흰색": "WHITE",
+    "그레이": "GRAY", "회색": "GRAY", "차콜": "GRAY",
+    "카키": "KHAKI", "국방색": "KHAKI",
+    "베이지": "BEIGE", "스킨": "BEIGE",
+    "버건디": "RED", "와인": "RED"
+  },
+  "roleKeywords": {
+    "셔츠": "TOP", "티셔츠": "TOP", "반팔": "TOP", "니트": "TOP", "맨투맨": "TOP", "후드": "TOP", "블라우스": "TOP",
+    "팬츠": "BOTTOM", "청바지": "BOTTOM", "슬랙스": "BOTTOM", "반바지": "BOTTOM", "치마": "BOTTOM", "레깅스": "BOTTOM",
+    "자켓": "OUTER", "코트": "OUTER", "패딩": "OUTER", "가디건": "OUTER", "점퍼": "OUTER", "쉘": "OUTER",
+    "운동화": "SHOES", "구두": "SHOES", "스니커즈": "SHOES", "부츠": "SHOES", "등산화": "SHOES", "로퍼": "SHOES",
+    "속옷": "INNER", "내복": "INNER", "이너": "INNER",
+    "가방": "BAG", "백팩": "BAG",
+    "모자": "ACCESSORY", "벨트": "ACCESSORY", "스카프": "ACCESSORY", "넥타이": "ACCESSORY", "양말": "ACCESSORY",
+    "원피스": "ONEPIECE"
+  },
+  "moduleKeywords": {
+    "회사": "UNIFORM", "근무": "UNIFORM", "유니폼": "UNIFORM",
+    "등산": "HIKING", "트레킹": "HIKING", "아웃도어": "HIKING", "고어텍스": "HIKING",
+    "헬스": "WORKOUT", "러닝": "WORKOUT", "짐": "WORKOUT", "트레이닝": "WORKOUT",
+    "정장": "SUIT", "수트": "SUIT", "예복": "SUIT",
+    "주말": "WEEKEND", "데이트": "WEEKEND", "캐주얼": "WEEKEND", "나들이": "WEEKEND",
+    "잠옷": "HOMEWEAR", "집": "HOMEWEAR", "라운지": "HOMEWEAR", "실내": "HOMEWEAR",
+    "속옷": "INNER", "내복": "INNER", "양말": "INNER", "베이스": "INNER"
+  }
+}

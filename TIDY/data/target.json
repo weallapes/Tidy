@@ -1,0 +1,79 @@
+{
+  "_comment": "모듈별 목표 수량(역할×계절) + 팔레트. auditModule()의 기준선(baseline). 출처: 04-quantity-color.md",
+  "version": "0.1",
+  "seasonBuckets": ["summer", "winter", "shoulder", "allseason"],
+  "_seasonNote": "shoulder=간절기(봄·가을 공용), allseason=계절 무관(신발·정장 등)",
+  "palette": {
+    "neutral": ["WHITE", "GRAY", "BLACK"],
+    "chromatic": ["RED", "ORANGE", "YELLOW", "GREEN", "TEAL", "BLUE", "NAVY", "PURPLE", "PINK", "BROWN", "BEIGE", "KHAKI"]
+  },
+  "modules": {
+    "UNIFORM": {
+      "name": "유니폼",
+      "palette": { "base": ["WHITE", "NAVY", "GRAY"], "secondary": ["BLACK"], "accent": [] },
+      "targets": {
+        "TOP":    { "summer": 6, "winter": 5, "shoulder": 2 },
+        "BOTTOM": { "summer": 2, "winter": 2, "shoulder": 1 },
+        "OUTER":  { "winter": 1, "shoulder": 1 },
+        "SHOES":  { "allseason": 1 }
+      }
+    },
+    "SUIT": {
+      "name": "정장",
+      "palette": { "base": ["NAVY", "GRAY"], "secondary": ["WHITE"], "accent": ["RED"] },
+      "targets": {
+        "SUITSET":     { "allseason": 2 },
+        "DRESS_SHIRT": { "allseason": 3 },
+        "TIE":         { "allseason": 3 },
+        "SHOES":       { "allseason": 1 }
+      }
+    },
+    "WEEKEND": {
+      "name": "주말 외출",
+      "palette": { "base": ["WHITE", "GRAY", "BLACK"], "secondary": ["BEIGE", "KHAKI", "BROWN", "GREEN"], "accent": ["ORANGE"] },
+      "targets": {
+        "TOP":    { "summer": 4, "winter": 4, "shoulder": 3 },
+        "BOTTOM": { "summer": 2, "winter": 2, "shoulder": 2 },
+        "OUTER":  { "winter": 1, "shoulder": 1 },
+        "SHOES":  { "allseason": 1 }
+      }
+    },
+    "WORKOUT": {
+      "name": "운동",
+      "palette": { "base": ["BLACK", "GRAY"], "secondary": ["NAVY"], "accent": ["YELLOW"] },
+      "targets": {
+        "TOP":    { "summer": 3, "winter": 3 },
+        "BOTTOM": { "summer": 2, "winter": 2 },
+        "OUTER":  { "winter": 1 },
+        "SHOES":  { "allseason": 1 }
+      }
+    },
+    "HIKING": {
+      "name": "등산",
+      "palette": { "base": ["KHAKI", "BLACK", "GRAY"], "secondary": ["BEIGE"], "accent": ["ORANGE"] },
+      "targets": {
+        "TOP":    { "summer": 2, "winter": 2, "shoulder": 2 },
+        "BOTTOM": { "summer": 1, "winter": 1, "shoulder": 1 },
+        "OUTER":  { "summer": 1, "winter": 1, "shoulder": 1 },
+        "SHOES":  { "allseason": 1 }
+      }
+    },
+    "HOMEWEAR": {
+      "name": "홈웨어",
+      "palette": { "base": ["GRAY", "WHITE"], "secondary": ["NAVY"], "accent": [] },
+      "targets": {
+        "SET": { "summer": 3, "winter": 3 }
+      }
+    },
+    "INNER": {
+      "name": "이너/언더웨어",
+      "palette": { "base": ["WHITE", "GRAY", "BLACK"], "secondary": ["BEIGE"], "accent": [] },
+      "targets": {
+        "UNDERWEAR":   { "allseason": 9 },
+        "SOCKS":       { "allseason": 9 },
+        "INNER_SHIRT": { "summer": 3 },
+        "THERMAL":     { "winter": 2 }
+      }
+    }
+  }
+}

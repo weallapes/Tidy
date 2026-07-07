@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TIDY — 모듈 상세 · 옷 등록</title>
+<style>
+  :root{
+    --bg:#0f1115; --panel:#171a21; --panel-2:#1e222b; --border:#2a2f3a;
+    --text:#e6e9ef; --muted:#9aa4b2; --faint:#6b7482; --accent:#6ea8fe;
+    --good:#3fb950; --gap:#e0a138; --gap-bg:rgba(224,161,56,.12);
+    --summer:#ffcf5c; --summer-bg:rgba(255,207,92,.08);
+    --radius:14px;
+    --c-WHITE:#f5f6f8; --c-GRAY:#9aa0a6; --c-BLACK:#20242c;
+    --c-RED:#c0392b; --c-ORANGE:#e67e22; --c-YELLOW:#f1c40f; --c-GREEN:#27ae60;
+    --c-TEAL:#17a2b8; --c-BLUE:#2e86de; --c-NAVY:#2c3e66; --c-PURPLE:#8e44ad;
+    --c-PINK:#e84393; --c-BROWN:#8d6e63; --c-BEIGE:#d9c7a8; --c-KHAKI:#7a7a52;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Pretendard","Apple SD Gothic Neo","Malgun Gothic",sans-serif;background:var(--bg);color:var(--text);padding:28px;line-height:1.5}
+  .wrap{max-width:1240px;margin:0 auto}
+  a.back{color:var(--faint);font-size:13px;text-decoration:none;cursor:pointer}
+  a.back:hover{color:var(--text)}
+
+  .mhead{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin:10px 0 18px}
+  .mhead .title{font-size:24px;font-weight:800;display:flex;align-items:center;gap:10px}
+  .mhead .desc{color:var(--faint);font-size:13px;margin-top:3px}
+  .tag{font-size:11px;font-weight:700;padding:3px 9px;border-radius:99px}
+  .tag.f{background:rgba(110,168,254,.14);color:#9cc2ff}
+  .tag.gap{background:var(--gap-bg);color:var(--gap)}
+  .tag.full{background:rgba(63,185,80,.16);color:#7ee787}
+  .pal{display:flex;gap:6px;align-items:center;margin-top:10px;flex-wrap:wrap}
+  .pal .lbl{font-size:11px;color:var(--faint)}
+  .dot{width:18px;height:18px;border-radius:6px;border:1px solid rgba(255,255,255,.14)}
+  .dot.accent{border-radius:50%}
+
+  .modnav{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:18px}
+  .modnav a{font-size:12px;padding:6px 12px;border-radius:99px;border:1px solid var(--border);color:var(--muted);text-decoration:none;cursor:pointer}
+  .modnav a.on{background:rgba(110,168,254,.14);color:#9cc2ff;border-color:transparent}
+  .modnav a:hover{border-color:var(--accent)}
+
+  .stats{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap}
+  .stat{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:12px 16px;min-width:110px}
+  .stat .k{color:var(--faint);font-size:11px;text-transform:uppercase;letter-spacing:.3px}
+  .stat .v{font-size:22px;font-weight:800;margin-top:3px}
+  .stat.g .v{color:var(--gap)} .stat.o .v{color:var(--good)}
+
+  .layout{display:grid;grid-template-columns:1.7fr 1fr;gap:18px;align-items:start}
+  @media(max-width:900px){.layout{grid-template-columns:1fr}}
+
+  .board{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:18px}
+  .board h3{font-size:14px;margin-bottom:14px;color:var(--muted)}
+  .filters{margin-bottom:16px}
+  .frow{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+  .frow .flab{font-size:11px;color:var(--faint);width:36px;flex:none;text-transform:uppercase}
+  .fchip{font-size:12px;padding:5px 12px;border-radius:99px;border:1px solid var(--border);color:var(--muted);cursor:pointer;user-select:none}
+  .fchip:hover{border-color:var(--accent)}
+  .fchip.on{background:rgba(110,168,254,.16);color:#9cc2ff;border-color:transparent;font-weight:700}
+  .rolerow{margin-bottom:18px}
+  .rolerow:last-child{margin-bottom:0}
+  .rolename{font-size:13px;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:8px}
+  .rolename .rc{color:var(--faint);font-weight:600;font-size:12px}
+  .seasoncol{margin-bottom:10px}
+  .slabel{font-size:11px;color:var(--faint);margin-bottom:6px}
+  .slabel.summer{color:var(--summer)}
+  .slots{display:flex;gap:8px;flex-wrap:wrap}
+  .slot{width:120px;border-radius:10px;padding:9px 10px;font-size:12px;border:1px solid var(--border)}
+  .slot.filled{background:var(--panel-2)}
+  .slot.filled .nm{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .slot.filled .meta{display:flex;align-items:center;gap:5px;margin-top:5px;color:var(--faint);font-size:11px}
+  .cdot{width:12px;height:12px;border-radius:4px;border:1px solid rgba(255,255,255,.18);flex:none}
+  .cond{font-size:10px;padding:1px 6px;border-radius:99px}
+  .cond.NEW{background:rgba(63,185,80,.16);color:#7ee787}
+  .cond.GOOD{background:rgba(110,168,254,.14);color:#9cc2ff}
+  .cond.DAMAGED{background:rgba(240,97,109,.14);color:#f0616d}
+  .slot.empty{border-style:dashed;border-color:rgba(224,161,56,.4);color:var(--gap);display:flex;align-items:center;justify-content:center;background:var(--gap-bg);cursor:pointer;min-height:52px}
+  .slot.empty:hover{background:rgba(224,161,56,.2)}
+
+  .reg{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:18px;position:sticky;top:20px}
+  .reg h3{font-size:14px;margin-bottom:4px;display:flex;align-items:center;gap:8px}
+  .reg .cap{color:var(--faint);font-size:12px;margin-bottom:14px}
+  .field{margin-bottom:12px}
+  .field label{display:block;font-size:11px;color:var(--faint);margin-bottom:5px;text-transform:uppercase;letter-spacing:.3px}
+  .input{background:var(--panel-2);border:1px solid var(--border);border-radius:9px;padding:10px 12px;font-size:13px;color:var(--text);width:100%}
+  .input:focus{outline:none;border-color:var(--accent)}
+  .inferred{background:var(--panel-2);border:1px solid var(--border);border-radius:9px;padding:11px 12px}
+  .irow{display:flex;align-items:center;justify-content:space-between;padding:6px 0;font-size:13px;border-bottom:1px solid rgba(255,255,255,.04)}
+  .irow:last-child{border-bottom:none}
+  .irow .lab{color:var(--faint);font-size:12px}
+  .irow .val{display:flex;align-items:center;gap:6px;font-weight:600}
+  .infer{font-size:9.5px;font-weight:700;padding:1px 6px;border-radius:99px;background:rgba(224,161,56,.16);color:var(--gap)}
+  .ok{font-size:9.5px;font-weight:700;padding:1px 6px;border-radius:99px;background:rgba(63,185,80,.16);color:#7ee787}
+  .btn{width:100%;margin-top:14px;padding:11px;border:none;border-radius:10px;background:linear-gradient(135deg,#6ea8fe,#8e7bff);color:#0f1115;font-weight:800;font-size:14px;cursor:pointer}
+  .btn:active{transform:translateY(1px)}
+  .hint{font-size:11px;color:var(--faint);margin-top:10px;line-height:1.5}
+
+  #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--panel-2);border:1px solid var(--accent);color:var(--text);padding:12px 20px;border-radius:12px;font-size:13px;font-weight:600;opacity:0;transition:.25s;pointer-events:none;z-index:10}
+  #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="dashboard.mockup.html">← 대시보드</a>
+
+  <div class="mhead" id="mhead"></div>
+  <div class="modnav" id="modnav"></div>
+  <div class="stats" id="stats"></div>
+
+  <div class="layout">
+    <div class="board">
+      <h3>역할 × 계절 — 채워진 슬롯 / 부족 슬롯</h3>
+      <div class="filters" id="filters"></div>
+      <div id="boardBody"></div>
+    </div>
+    <div class="reg" id="reg"></div>
+  </div>
+</div>
+<div id="toast"></div>
+
+<script>
+const KO={WHITE:'화이트',GRAY:'그레이',BLACK:'블랙',RED:'레드',ORANGE:'오렌지',YELLOW:'옐로우',GREEN:'그린',TEAL:'틸',BLUE:'블루',NAVY:'네이비',PURPLE:'퍼플',PINK:'핑크',BROWN:'브라운',BEIGE:'베이지',KHAKI:'카키'};
+const ROLE_KO={TOP:'상의',BOTTOM:'하의',OUTER:'아우터',SHOES:'신발',SET:'상하세트',SUITSET:'정장셋',DRESS_SHIRT:'드레스셔츠',TIE:'넥타이',UNDERWEAR:'속옷',SOCKS:'양말',INNER_SHIRT:'이너셔츠',THERMAL:'내복'};
+const MODNAME={UNIFORM:'유니폼',HIKING:'등산',WORKOUT:'운동',SUIT:'정장',WEEKEND:'주말 외출',HOMEWEAR:'홈웨어',INNER:'이너/언더웨어'};
+const SEASONS=[['summer','여름'],['winter','겨울'],['shoulder','간절기'],['allseason','공용']];
+const bucket=s=>({SUMMER:'summer',WINTER:'winter',SHOULDER:'shoulder',SPRING:'shoulder',FALL:'shoulder',ALL_SEASON:'allseason'}[s]||'allseason');
+
+const DATA={
+  UNIFORM:{name:'유니폼',desc:'회사용 · IT업계, 복장 규정 없음 (반팔·반바지 OK)',formality:3,kind:'activity',pal:{base:['WHITE','NAVY','GRAY'],secondary:['BLACK'],accent:[]},t:{TOP:{summer:5,winter:5,shoulder:2},BOTTOM:{summer:2,winter:2,shoulder:1},OUTER:{winter:1,shoulder:1},SHOES:{allseason:1}}},
+  HIKING:{name:'등산',desc:'아웃도어·트레킹',formality:2,kind:'activity',pal:{base:['KHAKI','BLACK','GRAY'],secondary:['BEIGE'],accent:['ORANGE']},t:{TOP:{summer:2,winter:2,shoulder:2},BOTTOM:{summer:1,winter:1,shoulder:1},OUTER:{summer:1,winter:1,shoulder:1},SHOES:{allseason:1}}},
+  WORKOUT:{name:'운동',desc:'헬스·러닝',formality:2,kind:'activity',pal:{base:['BLACK','GRAY'],secondary:['NAVY'],accent:['YELLOW']},t:{TOP:{summer:3,winter:3},BOTTOM:{summer:2,winter:2},OUTER:{winter:1},SHOES:{allseason:1}}},
+  SUIT:{name:'정장',desc:'격식 있는 자리',formality:5,kind:'activity',pal:{base:['NAVY','GRAY'],secondary:['WHITE'],accent:['RED']},t:{SUITSET:{allseason:2},DRESS_SHIRT:{allseason:3},TIE:{allseason:3},SHOES:{allseason:1}}},
+  WEEKEND:{name:'주말 외출',desc:'캐주얼 외출',formality:3,kind:'activity',pal:{base:['BLACK','WHITE','BEIGE'],secondary:['NAVY','KHAKI'],accent:['GREEN']},t:{TOP:{summer:4,winter:4,shoulder:3},BOTTOM:{summer:2,winter:2,shoulder:2},OUTER:{winter:1,shoulder:1},SHOES:{allseason:1}}},
+  HOMEWEAR:{name:'홈웨어',desc:'집·라운지',formality:1,kind:'activity',pal:{base:['GRAY','WHITE'],secondary:['NAVY'],accent:[]},t:{SET:{summer:3,winter:3}}},
+  INNER:{name:'이너/언더웨어',desc:'모든 모듈의 공유 베이스',formality:1,kind:'base',pal:{base:['WHITE','GRAY','BLACK'],secondary:['BEIGE'],accent:[]},t:{UNDERWEAR:{allseason:9},SOCKS:{allseason:9},INNER_SHIRT:{summer:3},THERMAL:{winter:2}}}
+};
+// 보유 옷 (data/inventory.json 반영)
+const INV=[
+  {name:'네이비 워크웨어 파티그',module:'UNIFORM',role:'BOTTOM',season:'SUMMER',color:'NAVY',cond:'GOOD'},
+  {name:'나이키 에어포스1',module:'UNIFORM',role:'SHOES',season:'ALL_SEASON',color:'WHITE',cond:'GOOD'},
+  {name:'올리브 워크웨어 파티그',module:'WEEKEND',role:'BOTTOM',season:'SUMMER',color:'KHAKI',cond:'GOOD'},
+  {name:'그레이 치노',module:'WEEKEND',role:'BOTTOM',season:'ALL_SEASON',color:'GRAY',cond:'GOOD'},
+  {name:'나이키 덩크',module:'WORKOUT',role:'SHOES',season:'ALL_SEASON',color:'BLACK',cond:'GOOD'},
+  {name:'써코니 러닝화',module:'WORKOUT',role:'SHOES',season:'ALL_SEASON',color:'GRAY',cond:'GOOD'},
+  {name:'아식스 러닝화(낡음)',module:'WORKOUT',role:'SHOES',season:'ALL_SEASON',color:'GRAY',cond:'RETIRE',active:false},
+  {name:'컬럼비아 등산화',module:'HIKING',role:'SHOES',season:'ALL_SEASON',color:'BROWN',cond:'GOOD'},
+  {name:'몽벨 하드쉘',module:'HIKING',role:'OUTER',season:'ALL_SEASON',color:'GRAY',cond:'GOOD'},
+  {name:'블랙다이아 하드쉘',module:'HIKING',role:'OUTER',season:'ALL_SEASON',color:'RED',cond:'GOOD'},
+  {name:'다크그레이 조거',module:'HIKING',role:'BOTTOM',season:'ALL_SEASON',color:'GRAY',cond:'GOOD'},
+  {name:'그레이 정장자켓',module:'SUIT',role:'OUTER',season:'ALL_SEASON',color:'GRAY',cond:'GOOD'},
+  {name:'그레이 정장바지',module:'SUIT',role:'BOTTOM',season:'ALL_SEASON',color:'GRAY',cond:'GOOD'},
+  {name:'블랙 구두',module:'SUIT',role:'SHOES',season:'ALL_SEASON',color:'BLACK',cond:'GOOD'},
+  {name:'흰 드레스셔츠',module:'SUIT',role:'TOP',season:'ALL_SEASON',color:'WHITE',cond:'GOOD'},
+  {name:'검정 드레스셔츠',module:'SUIT',role:'TOP',season:'ALL_SEASON',color:'BLACK',cond:'GOOD'},
+  {name:'속옷',module:'INNER',role:'INNER',season:'ALL_SEASON',color:'GRAY',cond:'GOOD',qty:8},
+  {name:'화이트 미드삭스',module:'INNER',role:'ACCESSORY',season:'ALL_SEASON',color:'WHITE',cond:'GOOD',qty:10},
+];
+// inventory role → target role 정규화 (어휘 불일치 흡수)
+function normRole(g){
+  if(g.module==='INNER'){ if(g.role==='INNER')return 'UNDERWEAR'; if(g.role==='ACCESSORY')return 'SOCKS'; }
+  if(g.module==='SUIT'){ if(g.role==='OUTER'||g.role==='BOTTOM')return 'SUITSET'; if(g.role==='TOP')return 'DRESS_SHIRT'; }
+  return g.role;
+}
+
+const param=new URLSearchParams(location.search).get('module');
+const MID=DATA[param]?param:'UNIFORM';
+const m=DATA[MID];
+// 커버리지 카운팅(ALL_SEASON 유동 필러) + qty 확장 → 셀별 보유 아이템 배열
+function allocForRole(role){
+  const buckets=(m.t[role])||{};
+  const items=INV.filter(g=>g.module===MID && g.active!==false && normRole(g)===role);
+  const exp=[]; items.forEach(g=>{ for(let i=0;i<(g.qty||1);i++) exp.push(g); });
+  const byB={}; exp.forEach(g=>{(byB[bucket(g.season)] ??= []).push(g);});
+  const cell={};
+  Object.keys(buckets).forEach(b=>{ if(b!=='allseason') cell[b]=(byB[b]||[]).slice(); });
+  const asAll=(byB['allseason']||[]).slice(), asNeed=buckets['allseason']||0;
+  if(buckets['allseason']!=null) cell['allseason']=asAll.slice(0,asNeed);
+  const flex=asAll.slice(asNeed);
+  ['summer','winter','shoulder'].forEach(b=>{ if(buckets[b]==null)return; let gap=buckets[b]-((cell[b]||[]).length); while(gap>0&&flex.length){ (cell[b]??=[]).push(flex.shift()); gap--; } });
+  return cell;
+}
+const _alloc={};
+const ownedIn=(role,b)=>{ (_alloc[role] ??= allocForRole(role)); return _alloc[role][b]||[]; };
+
+// 헤더
+document.getElementById('mhead').innerHTML=`
+  <div>
+    <div class="title">${m.name} <span class="tag f">격식 ${m.formality}</span> ${m.kind==='base'?'<span class="tag" style="background:rgba(142,123,255,.16);color:#c3b8ff">공유 베이스</span>':''}</div>
+    <div class="desc">${m.desc}</div>
+    <div class="pal"><span class="lbl">base</span>${m.pal.base.map(c=>`<span class="dot" style="background:var(--c-${c})" title="${KO[c]}"></span>`).join('')}
+      ${m.pal.secondary.length?`<span class="lbl" style="margin-left:8px">secondary</span>${m.pal.secondary.map(c=>`<span class="dot" style="background:var(--c-${c})"></span>`).join('')}`:''}
+      ${m.pal.accent.length?`<span class="lbl" style="margin-left:8px">accent</span>${m.pal.accent.map(c=>`<span class="dot accent" style="background:var(--c-${c})"></span>`).join('')}`:'<span class="lbl" style="margin-left:8px">accent 없음</span>'}
+    </div>
+  </div>
+  <span id="gapTag"></span>`;
+
+// 모듈 내비
+document.getElementById('modnav').innerHTML=Object.keys(DATA).map(id=>
+  `<a class="${id===MID?'on':''}" href="module-detail.mockup.html?module=${id}">${MODNAME[id]}</a>`).join('');
+
+// 모듈 총계 (필터와 무관 — stats용)
+let mT=0,mO=0;
+for(const [role,buckets] of Object.entries(m.t))
+  for(const [b,need] of Object.entries(buckets)){mT+=need;mO+=ownedIn(role,b).length;}
+const gap=mT-mO, pct=Math.round(mO/mT*100);
+document.getElementById('gapTag').innerHTML=gap>0?`<span class="tag gap">부족 ${gap}</span>`:`<span class="tag full">충족</span>`;
+document.getElementById('stats').innerHTML=`
+  <div class="stat"><div class="k">목표</div><div class="v">${mT}</div></div>
+  <div class="stat o"><div class="k">보유</div><div class="v">${mO}</div></div>
+  <div class="stat g"><div class="k">부족</div><div class="v">${gap}</div></div>
+  <div class="stat"><div class="k">채움률</div><div class="v">${pct}%</div></div>`;
+
+// ── 필터 (역할 · 계절) ──
+let roleF='ALL', seasonF='ALL';
+const availSeasons=SEASONS.map(s=>s[0]).filter(sk=>Object.values(m.t).some(bk=>bk[sk]!=null));
+const seasonKO=b=>SEASONS.find(s=>s[0]===b)[1];
+
+function renderFilters(){
+  const chip=(active,label,on)=>`<a class="fchip ${active?'on':''}" data-on="${on}">${label}</a>`;
+  const roles=['ALL',...Object.keys(m.t)].map(r=>chip(roleF===r,r==='ALL'?'전체':(ROLE_KO[r]||r),'role:'+r)).join('');
+  const seasons=['ALL',...availSeasons].map(s=>chip(seasonF===s,s==='ALL'?'전체':seasonKO(s),'season:'+s)).join('');
+  document.getElementById('filters').innerHTML=
+    `<div class="frow"><span class="flab">역할</span>${roles}</div><div class="frow"><span class="flab">계절</span>${seasons}</div>`;
+  document.querySelectorAll('#filters .fchip').forEach(c=>c.onclick=()=>{
+    const [k,v]=c.dataset.on.split(':'); if(k==='role')roleF=v; else seasonF=v;
+    renderFilters(); renderBoard();
+  });
+}
+function renderBoard(){
+  let body='';
+  for(const [role,buckets] of Object.entries(m.t)){
+    if(roleF!=='ALL'&&role!==roleF) continue;
+    const parts=[];
+    for(const [b,need] of Object.entries(buckets)){
+      if(seasonF!=='ALL'&&b!==seasonF) continue;
+      const gs=ownedIn(role,b);const slots=[];
+      for(let i=0;i<need;i++){const g=gs[i];
+        if(g) slots.push(`<div class="slot filled"><div class="nm">${g.name}</div><div class="meta"><span class="cdot" style="background:var(--c-${g.color})"></span><span class="cond ${g.cond}">${g.cond}</span></div></div>`);
+        else slots.push(`<div class="slot empty" data-add="${ROLE_KO[role]}·${seasonKO(b)}">+ 추가</div>`);}
+      parts.push(`<div class="seasoncol"><div class="slabel ${b==='summer'?'summer':''}">${b==='summer'?'☀ ':''}${seasonKO(b)} (${gs.length}/${need})</div><div class="slots">${slots.join('')}</div></div>`);
+    }
+    if(!parts.length) continue;
+    const rc=Object.entries(buckets).filter(([b])=>seasonF==='ALL'||b===seasonF).map(([b,n])=>`${seasonKO(b)} ${ownedIn(role,b).length}/${n}`).join(' · ');
+    body+=`<div class="rolerow"><div class="rolename">${ROLE_KO[role]||role} <span class="rc">${rc}</span></div>${parts.join('')}</div>`;
+  }
+  document.getElementById('boardBody').innerHTML=body||'<div style="color:var(--faint);font-size:13px;padding:8px 0">해당 조건의 칸이 없습니다.</div>';
+  document.querySelectorAll('.slot.empty').forEach(s=>s.onclick=()=>showToast(`➕ ${s.dataset.add} 슬롯에 옷 추가 (목업)`));
+}
+renderFilters(); renderBoard();
+
+// 등록 폼 (모듈 맥락 반영)
+const example={UNIFORM:['린넨 반팔 셔츠','상의','여름','WHITE'],HIKING:['고어텍스 자켓','아우터','간절기','KHAKI'],
+  WORKOUT:['기능성 반팔','상의','여름','BLACK'],SUIT:['드레스 셔츠','드레스셔츠','공용','WHITE'],
+  WEEKEND:['린넨 반팔티','상의','여름','BEIGE'],HOMEWEAR:['면 잠옷 세트','상하세트','여름','GRAY'],
+  INNER:['여름 이너셔츠','이너셔츠','여름','WHITE']}[MID];
+document.getElementById('reg').innerHTML=`
+  <h3>➕ 옷 등록</h3>
+  <div class="cap">이름만 입력하면 나머지는 자동 추론 → 보정</div>
+  <div class="field"><label>이름</label><input class="input" id="nameInput" value="${example[0]}"></div>
+  <div class="field"><label>자동 추론 결과</label>
+    <div class="inferred">
+      <div class="irow"><span class="lab">모듈</span><span class="val">${m.name} <span class="infer">추론</span></span></div>
+      <div class="irow"><span class="lab">역할</span><span class="val">${example[1]} <span class="infer">추론</span></span></div>
+      <div class="irow"><span class="lab">계절</span><span class="val">${example[2]} <span class="infer">추론</span></span></div>
+      <div class="irow"><span class="lab">색상</span><span class="val"><span class="cdot" style="background:var(--c-${example[3]})"></span>${KO[example[3]]} <span class="infer">추론</span></span></div>
+      <div class="irow"><span class="lab">상태</span><span class="val">NEW <span class="ok">기본</span></span></div>
+    </div>
+  </div>
+  <button class="btn" id="saveBtn">${m.name} · ${example[2]} ${example[1]}로 등록</button>
+  <div class="hint">· 추론값은 <b style="color:var(--gap)">추론</b> 배지 → 클릭해 보정 가능<br>· 저장 시 해당 칸 채움률 상승</div>`;
+
+// 반응 (토스트)
+const toast=document.getElementById('toast');
+let tt;
+function showToast(msg){toast.textContent=msg;toast.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>toast.classList.remove('show'),1800);}
+document.getElementById('saveBtn').onclick=()=>showToast(`✅ "${document.getElementById('nameInput').value}" 등록됨 (목업)`);
+</script>
+</body>
+</html>

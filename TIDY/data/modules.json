@@ -1,0 +1,13 @@
+{
+  "_comment": "TIDY 7개 목적 모듈 정의. 상위 문서: 03-module-concept.md, 00-structure.md",
+  "version": "0.1",
+  "modules": [
+    { "id": "UNIFORM",  "name": "유니폼",        "desc": "회사용 (IT업계·복장 규정 없음, 반팔·반바지 OK)", "location": "", "formalityDefault": 3, "kind": "activity" },
+    { "id": "HIKING",   "name": "등산",          "desc": "아웃도어·트레킹",             "location": "", "formalityDefault": 2, "kind": "activity" },
+    { "id": "WORKOUT",  "name": "운동",          "desc": "헬스·러닝",                   "location": "", "formalityDefault": 2, "kind": "activity" },
+    { "id": "SUIT",     "name": "정장",          "desc": "격식 있는 자리",              "location": "", "formalityDefault": 5, "kind": "activity" },
+    { "id": "WEEKEND",  "name": "주말 외출",     "desc": "캐주얼 외출",                 "location": "", "formalityDefault": 3, "kind": "activity" },
+    { "id": "HOMEWEAR", "name": "홈웨어",        "desc": "집·라운지",                   "location": "", "formalityDefault": 1, "kind": "activity" },
+    { "id": "INNER",    "name": "이너/언더웨어", "desc": "모든 모듈의 공유 베이스",     "location": "", "formalityDefault": 1, "kind": "base" }
+  ]
+}

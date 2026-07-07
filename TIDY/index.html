@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1">
+<meta name="theme-color" content="#0f1115">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="TIDY">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg">
+<title>TIDY</title>
+<style>
+  :root{
+    --bg:#0f1115; --panel:#171a21; --panel-2:#1e222b; --border:#2a2f3a;
+    --text:#e6e9ef; --muted:#9aa4b2; --faint:#6b7482; --accent:#6ea8fe;
+    --good:#3fb950; --gap:#e0a138; --gap-bg:rgba(224,161,56,.12);
+    --danger:#f0616d; --danger-bg:rgba(240,97,109,.12);
+    --summer:#ffcf5c; --summer-bg:rgba(255,207,92,.10); --radius:14px;
+    --c-WHITE:#f5f6f8; --c-GRAY:#9aa0a6; --c-BLACK:#20242c; --c-RED:#c0392b;
+    --c-ORANGE:#e67e22; --c-YELLOW:#f1c40f; --c-GREEN:#27ae60; --c-TEAL:#17a2b8;
+    --c-BLUE:#2e86de; --c-NAVY:#2c3e66; --c-PURPLE:#8e44ad; --c-PINK:#e84393;
+    --c-BROWN:#8d6e63; --c-BEIGE:#d9c7a8; --c-KHAKI:#7a7a52;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Pretendard","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+    background:var(--bg);color:var(--text);line-height:1.5;
+    padding:0 0 calc(64px + env(safe-area-inset-bottom));font-size:15px}
+  .app{max-width:520px;margin:0 auto;min-height:100vh}
+  .top{position:sticky;top:0;z-index:5;background:rgba(15,17,21,.9);backdrop-filter:blur(8px);
+    padding:14px 16px calc(12px);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+  .top .logo{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,#6ea8fe,#8e7bff);display:grid;place-items:center;font-weight:800;color:#0f1115;font-size:15px}
+  .top h1{font-size:16px;font-weight:800}
+  .top .season{margin-left:auto;font-size:11px;color:var(--summer);background:var(--summer-bg);border:1px solid rgba(255,207,92,.3);padding:3px 9px;border-radius:99px;font-weight:700}
+  .view{padding:14px 16px;display:none}
+  .view.on{display:block}
+  h2.sec{font-size:14px;color:var(--muted);margin:4px 0 10px;display:flex;align-items:center;gap:8px}
+
+  /* progress */
+  .prog{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;margin-bottom:14px}
+  .prog .lab{display:flex;justify-content:space-between;font-size:13px;margin-bottom:8px}
+  .prog .lab b{font-size:18px}
+  .bar{height:9px;border-radius:99px;background:var(--panel-2);overflow:hidden}
+  .bar>i{display:block;height:100%;background:linear-gradient(90deg,#6ea8fe,#8e7bff);border-radius:99px;transition:width .3s}
+
+  .grp{margin-bottom:16px}
+  .ghead{display:flex;align-items:center;gap:8px;margin:0 2px 8px}
+  .ghead .nm{font-size:14px;font-weight:700}
+  .ghead .brk{color:var(--faint);font-size:12px}
+  .ghead .cnt{margin-left:auto;font-size:11px;font-weight:800;color:var(--gap)}
+
+  .row{display:flex;align-items:center;gap:10px;background:var(--panel);border:1px solid var(--border);
+    border-radius:12px;padding:11px 12px;margin-bottom:7px;cursor:pointer;transition:.12s}
+  .row:active{transform:scale(.99)}
+  .row.done{opacity:.5}
+  .row.done .type,.row.done .cname{text-decoration:line-through}
+  .chip{width:22px;height:22px;border-radius:6px;border:1px solid rgba(255,255,255,.18);flex:none}
+  .chip.accent{border-radius:50%}
+  .cname{font-weight:700;font-size:13px;width:56px;flex:none}
+  .type{flex:1;font-size:13px}
+  .type small{color:var(--faint);display:block;font-size:11px}
+  .q{font-weight:800;font-size:15px;color:var(--gap);min-width:34px;text-align:right}
+  .check{width:24px;height:24px;border-radius:7px;border:2px solid var(--border);flex:none;display:grid;place-items:center;font-size:14px;color:transparent}
+  .row.done .check{background:var(--good);border-color:var(--good);color:#0f1115}
+  .row.done .q{color:var(--faint)}
+
+  /* dashboard */
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+  .stat{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:11px 12px;text-align:center}
+  .stat .k{color:var(--faint);font-size:10.5px;text-transform:uppercase;letter-spacing:.3px}
+  .stat .v{font-size:20px;font-weight:800;margin-top:3px}
+  .stat.gap .v{color:var(--gap)} .stat.have .v{color:var(--good)}
+  .mcard{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:13px 14px;margin-bottom:10px;cursor:pointer}
+  .mcard:active{border-color:var(--accent)}
+  .mcard .h{display:flex;align-items:center;gap:8px;margin-bottom:9px}
+  .mcard .h .nm{font-weight:700;font-size:14px}
+  .mcard .h .tag{font-size:10px;font-weight:700;padding:2px 7px;border-radius:99px;background:rgba(110,168,254,.14);color:#9cc2ff}
+  .mcard .h .tg{margin-left:auto;font-size:11px;font-weight:800}
+  .mcard .h .tg.gap{color:var(--gap)} .mcard .h .tg.full{color:var(--good)}
+  .mbar{height:7px;border-radius:99px;background:var(--panel-2);overflow:hidden}
+  .mbar>i{display:block;height:100%;background:linear-gradient(90deg,#6ea8fe,#8e7bff)}
+  .mcard .pal{display:flex;gap:4px;margin-top:9px}
+  .dot{width:15px;height:15px;border-radius:4px;border:1px solid rgba(255,255,255,.14)}
+
+  /* detail */
+  .back{color:var(--accent);font-size:13px;font-weight:700;background:none;border:none;padding:0;margin-bottom:10px;cursor:pointer}
+  .drow{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:11px 13px;margin-bottom:8px}
+  .drow .rn{font-weight:700;font-size:13px;margin-bottom:8px}
+  .cells{display:flex;gap:6px;flex-wrap:wrap}
+  .cell{flex:1;min-width:60px;text-align:center;background:var(--panel-2);border:1px solid var(--border);border-radius:9px;padding:7px 4px}
+  .cell .cs{font-size:10px;color:var(--faint)}
+  .cell .cv{font-weight:800;font-size:14px;margin-top:2px}
+  .cell.full .cv{color:var(--good)} .cell.gap .cv{color:var(--gap)}
+  .cell.summer{background:var(--summer-bg)}
+
+  /* global */
+  .grow{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:11px 12px;margin-bottom:8px;display:flex;align-items:center;gap:10px;font-size:13px}
+  .grow.warn{border-color:rgba(240,97,109,.3)}
+  .pill{font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;white-space:nowrap}
+  .pill.mod{background:rgba(110,168,254,.12);color:#9cc2ff}
+  .pill.warn{background:var(--danger-bg);color:var(--danger)}
+  .pill.gap{background:var(--gap-bg);color:var(--gap)}
+  .muted{color:var(--faint)}
+  .resetbtn{width:100%;margin-top:8px;padding:10px;border:1px solid var(--border);background:var(--panel);color:var(--muted);border-radius:10px;font-size:13px;cursor:pointer}
+
+  /* bottom nav */
+  nav{position:fixed;bottom:0;left:0;right:0;z-index:10;display:flex;background:rgba(23,26,33,.96);
+    backdrop-filter:blur(10px);border-top:1px solid var(--border);padding-bottom:env(safe-area-inset-bottom)}
+  nav button{flex:1;background:none;border:none;color:var(--faint);padding:9px 0 8px;font-size:11px;font-weight:700;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px}
+  nav button .ic{font-size:19px;line-height:1}
+  nav button.on{color:var(--accent)}
+  .empty{color:var(--faint);font-size:13px;padding:10px 2px}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="top">
+    <div class="logo">T</div>
+    <h1 id="title">TIDY</h1>
+    <span class="season">☀ 여름</span>
+  </div>
+
+  <div class="view on" id="v-shop"></div>
+  <div class="view" id="v-dash"></div>
+  <div class="view" id="v-detail"></div>
+  <div class="view" id="v-global"></div>
+</div>
+
+<nav>
+  <button class="on" data-v="shop"><span class="ic">🛒</span>쇼핑</button>
+  <button data-v="dash"><span class="ic">📊</span>옷장</button>
+  <button data-v="global"><span class="ic">🌐</span>정리</button>
+</nav>
+
+<script>
+// ═══ 데이터 (target.json / inventory.json 임베드) ═══
+const KO={WHITE:'화이트',GRAY:'그레이',BLACK:'블랙',RED:'레드',ORANGE:'러스트',YELLOW:'형광',GREEN:'그린',TEAL:'틸',BLUE:'샴브레이',NAVY:'네이비',BROWN:'브라운',BEIGE:'베이지',KHAKI:'카키'};
+const ROLE_KO={TOP:'상의',BOTTOM:'하의',OUTER:'아우터',SHOES:'신발',SUITSET:'정장셋',DRESS_SHIRT:'드레스셔츠',TIE:'넥타이',UNDERWEAR:'속옷',SOCKS:'양말'};
+const MODNAME={UNIFORM:'유니폼',HIKING:'등산',WORKOUT:'운동',SUIT:'정장',WEEKEND:'주말 외출',HOMEWEAR:'홈웨어',INNER:'이너/언더'};
+const SEASONS=[['summer','여름'],['winter','겨울'],['shoulder','간절기'],['allseason','공용']];
+const bucket=s=>({SUMMER:'summer',WINTER:'winter',SHOULDER:'shoulder',SPRING:'shoulder',FALL:'shoulder',ALL_SEASON:'allseason'}[s]||'allseason');
+
+const DATA={
+  UNIFORM:{name:'유니폼',formality:3,pal:{base:['WHITE','NAVY','GRAY'],secondary:['BLACK'],accent:[]},t:{TOP:{summer:6,winter:5,shoulder:2},BOTTOM:{summer:2,winter:2,shoulder:1},OUTER:{winter:1,shoulder:1},SHOES:{allseason:1}}},
+  HIKING:{name:'등산',formality:2,pal:{base:['KHAKI','BLACK','GRAY'],secondary:['BEIGE'],accent:['ORANGE']},t:{TOP:{summer:2,winter:2,shoulder:2},BOTTOM:{summer:1,winter:1,shoulder:1},OUTER:{summer:1,winter:1,shoulder:1},SHOES:{allseason:1}}},
+  WORKOUT:{name:'운동',formality:2,pal:{base:['BLACK','GRAY'],secondary:['NAVY'],accent:['YELLOW']},t:{TOP:{summer:3,winter:3},BOTTOM:{summer:2,winter:2},OUTER:{winter:1},SHOES:{allseason:1}}},
+  SUIT:{name:'정장',formality:5,pal:{base:['NAVY','GRAY'],secondary:['WHITE'],accent:['RED']},t:{SUITSET:{allseason:2},DRESS_SHIRT:{allseason:3},TIE:{allseason:3},SHOES:{allseason:1}}},
+  WEEKEND:{name:'주말 외출',formality:3,pal:{base:['WHITE','GRAY','BLACK'],secondary:['BEIGE','KHAKI','BROWN','GREEN'],accent:['ORANGE']},t:{TOP:{summer:4,winter:4,shoulder:3},BOTTOM:{summer:2,winter:2,shoulder:2},OUTER:{winter:1,shoulder:1},SHOES:{allseason:1}}},
+  HOMEWEAR:{name:'홈웨어',formality:1,pal:{base:['GRAY','WHITE'],secondary:['NAVY'],accent:[]},t:{SET:{summer:3,winter:3}}},
+  INNER:{name:'이너/언더',formality:1,pal:{base:['WHITE','GRAY','BLACK'],secondary:['BEIGE'],accent:[]},t:{UNDERWEAR:{allseason:9},SOCKS:{allseason:9},INNER_SHIRT:{summer:3},THERMAL:{winter:2}}}
+};
+// 보유 (inventory.json)
+const INV=[
+  {name:'네이비 파티그',module:'UNIFORM',role:'BOTTOM',season:'SUMMER',color:'NAVY',cond:'GOOD'},
+  {name:'나이키 AF1',module:'UNIFORM',role:'SHOES',season:'ALL_SEASON',color:'WHITE',cond:'GOOD'},
+  {name:'올리브 파티그',module:'WEEKEND',role:'BOTTOM',season:'SUMMER',color:'KHAKI',cond:'GOOD'},
+  {name:'그레이 치노',module:'WEEKEND',role:'BOTTOM',season:'ALL_SEASON',color:'GRAY',cond:'GOOD'},
+  {name:'나이키 덩크',module:'WORKOUT',role:'SHOES',season:'ALL_SEASON',color:'BLACK',cond:'GOOD'},
+  {name:'써코니 러닝화',module:'WORKOUT',role:'SHOES',season:'ALL_SEASON',color:'GRAY',cond:'GOOD'},
+  {name:'아식스 러닝화(낡음)',module:'WORKOUT',role:'SHOES',season:'ALL_SEASON',color:'GRAY',cond:'RETIRE',active:false},
+  {name:'컬럼비아 등산화',module:'HIKING',role:'SHOES',season:'ALL_SEASON',color:'BROWN',cond:'GOOD'},
+  {name:'몽벨 하드쉘',module:'HIKING',role:'OUTER',season:'ALL_SEASON',color:'GRAY',cond:'GOOD'},
+  {name:'블랙다이아 하드쉘',module:'HIKING',role:'OUTER',season:'ALL_SEASON',color:'RED',cond:'GOOD'},
+  {name:'다크그레이 조거',module:'HIKING',role:'BOTTOM',season:'ALL_SEASON',color:'GRAY',cond:'GOOD'},
+  {name:'그레이 정장자켓',module:'SUIT',role:'OUTER',season:'ALL_SEASON',color:'GRAY',cond:'GOOD'},
+  {name:'그레이 정장바지',module:'SUIT',role:'BOTTOM',season:'ALL_SEASON',color:'GRAY',cond:'GOOD'},
+  {name:'블랙 구두',module:'SUIT',role:'SHOES',season:'ALL_SEASON',color:'BLACK',cond:'GOOD'},
+  {name:'흰 드레스셔츠',module:'SUIT',role:'TOP',season:'ALL_SEASON',color:'WHITE',cond:'GOOD'},
+  {name:'검정 드레스셔츠',module:'SUIT',role:'TOP',season:'ALL_SEASON',color:'BLACK',cond:'GOOD'},
+  {name:'속옷',module:'INNER',role:'INNER',season:'ALL_SEASON',color:'GRAY',cond:'GOOD',qty:8},
+  {name:'화이트 미드삭스',module:'INNER',role:'ACCESSORY',season:'ALL_SEASON',color:'WHITE',cond:'GOOD',qty:10},
+];
+// 구매 리스트 (색상×종류×수량, 06 마스터) — role/bucket로 옷장 그리드에 매핑
+const BUY=[
+  {g:'유니폼',brk:'상의6·하의1',items:[
+    {id:'u1',color:'WHITE',cname:'화이트',type:'무지 반팔티',note:'헤비 코튼',q:4,module:'UNIFORM',role:'TOP',bk:'summer'},
+    {id:'u2',color:'NAVY',cname:'네이비',type:'무지 반팔티',note:'시그니처',q:2,module:'UNIFORM',role:'TOP',bk:'summer'},
+    {id:'u3',color:'GRAY',cname:'그레이',type:'치노 반바지',note:'스트레이트',q:1,module:'UNIFORM',role:'BOTTOM',bk:'summer'},
+  ]},
+  {g:'주말 외출',brk:'상의4·하의1',items:[
+    {id:'w1',color:'WHITE',cname:'화이트',type:'무지 반팔티',note:'만능',q:1,module:'WEEKEND',role:'TOP',bk:'summer'},
+    {id:'w2',color:'BEIGE',cname:'에크루',type:'반팔티',note:'온기',q:1,module:'WEEKEND',role:'TOP',bk:'summer'},
+    {id:'w3',color:'ORANGE',cname:'러스트',type:'반팔티',note:'accent',q:1,acc:1,module:'WEEKEND',role:'TOP',bk:'summer'},
+    {id:'w4',color:'BLUE',cname:'샴브레이',type:'오픈칼라 셔츠',note:'아메카지',q:1,module:'WEEKEND',role:'TOP',bk:'summer'},
+    {id:'w5',color:'BEIGE',cname:'베이지',type:'치노 쇼츠',note:'반바지',q:1,module:'WEEKEND',role:'BOTTOM',bk:'summer'},
+  ]},
+  {g:'운동',brk:'상의5·하의3',items:[
+    {id:'k1',color:'YELLOW',cname:'형광',type:'흡한속건 티',note:'야간',q:1,acc:1,module:'WORKOUT',role:'TOP',bk:'summer'},
+    {id:'k2',color:'WHITE',cname:'화이트',type:'흡한속건 티',note:'열반사',q:1,module:'WORKOUT',role:'TOP',bk:'summer'},
+    {id:'k3',color:'BLACK',cname:'블랙',type:'흡한속건 티',note:'헬스',q:1,module:'WORKOUT',role:'TOP',bk:'summer'},
+    {id:'k4',color:'GRAY',cname:'그레이',type:'흡한속건 티',note:'로테이션',q:2,module:'WORKOUT',role:'TOP',bk:'summer'},
+    {id:'k5',color:'BLACK',cname:'블랙',type:'기능성 반바지',note:'라이너',q:1,module:'WORKOUT',role:'BOTTOM',bk:'summer'},
+    {id:'k6',color:'GRAY',cname:'그레이',type:'기능성 반바지',note:'',q:1,module:'WORKOUT',role:'BOTTOM',bk:'summer'},
+    {id:'k7',color:'NAVY',cname:'네이비',type:'기능성 반바지',note:'',q:1,module:'WORKOUT',role:'BOTTOM',bk:'summer'},
+  ]},
+  {g:'공용 신발',brk:'신발1',items:[
+    {id:'s1',color:'GRAY',cname:'그레이',type:'뉴발 스웨이드 러너',note:'볼륨 밑창',q:1,module:'WEEKEND',role:'SHOES',bk:'allseason'},
+  ]},
+  {g:'이너/언더',brk:'양말9~11',items:[
+    {id:'i1',color:'GRAY',cname:'그레이',type:'색 양말',note:'만능',q:3,module:'INNER',role:'SOCKS',bk:'allseason'},
+    {id:'i2',color:'NAVY',cname:'네이비',type:'색 양말',note:'톤온톤',q:2,module:'INNER',role:'SOCKS',bk:'allseason'},
+    {id:'i3',color:'BEIGE',cname:'어스톤',type:'색 양말',note:'선택',q:1,module:'INNER',role:'SOCKS',bk:'allseason'},
+    {id:'i4',color:'WHITE',cname:'화이트',type:'스포츠 양말',note:'러닝·헬스',q:4,module:'INNER',role:'SOCKS',bk:'allseason'},
+  ]},
+  {g:'등산',brk:'양말2~3',items:[
+    {id:'h1',color:'GRAY',cname:'그레이',type:'울 쿠션 등산양말',note:'물집방지',q:2,module:'INNER',role:'SOCKS',bk:'allseason'},
+  ]},
+  {g:'정장',brk:'상의1·부속3',items:[
+    {id:'t1',color:'WHITE',cname:'화이트',type:'드레스셔츠',note:'여벌',q:1,module:'SUIT',role:'DRESS_SHIRT',bk:'allseason'},
+    {id:'t2',color:'BLACK',cname:'블랙',type:'넥타이',note:'무광',q:1,module:'SUIT',role:'TIE',bk:'allseason'},
+    {id:'t3',color:'NAVY',cname:'네이비',type:'넥타이',note:'격식',q:1,module:'SUIT',role:'TIE',bk:'allseason'},
+    {id:'t4',color:'BLACK',cname:'블랙',type:'가죽 벨트',note:'',q:1,module:'SUIT',role:null,bk:null},
+  ]},
+];
+const ALLBUY=BUY.flatMap(g=>g.items);
+const buyTotal=ALLBUY.reduce((s,it)=>s+it.q,0);
+
+// ═══ 상태 (localStorage) ═══
+const KEY='tidy_bought_v1';
+let bought=new Set(JSON.parse(localStorage.getItem(KEY)||'[]'));
+const save=()=>localStorage.setItem(KEY,JSON.stringify([...bought]));
+
+// ═══ 카운팅 ═══
+function normRole(g){
+  if(g.module==='INNER'){if(g.role==='INNER')return'UNDERWEAR';if(g.role==='ACCESSORY')return'SOCKS';}
+  if(g.module==='SUIT'){if(g.role==='OUTER'||g.role==='BOTTOM')return'SUITSET';if(g.role==='TOP')return'DRESS_SHIRT';}
+  return g.role;
+}
+const qtyOf=g=>g.qty||1;
+// 실효 보유 = 기존 보유(active) + 구매완료 항목
+function effInv(){
+  const base=INV.filter(g=>g.active!==false);
+  const boughtG=ALLBUY.filter(it=>bought.has(it.id)&&it.role).map(it=>({
+    module:it.module,role:it.role,season:it.bk==='summer'?'SUMMER':'ALL_SEASON',color:it.color,cond:'NEW',qty:it.q,_buy:1}));
+  return base.concat(boughtG);
+}
+function ownedCells(module,role,inv){
+  const buckets=(DATA[module]?.t[role])||{};
+  const items=inv.filter(g=>g.module===module&&normRole(g)===role);
+  const byB={}; items.forEach(g=>{(byB[bucket(g.season)]??=[]).push(g);});
+  const cnt=b=>(byB[b]||[]).reduce((s,g)=>s+qtyOf(g),0);
+  const cell={};
+  Object.keys(buckets).forEach(b=>{if(b!=='allseason')cell[b]=cnt(b);});
+  const asC=cnt('allseason'),asN=buckets['allseason']||0;
+  if(buckets['allseason']!=null)cell['allseason']=Math.min(asC,asN);
+  let flex=Math.max(0,asC-asN);
+  ['summer','winter','shoulder'].forEach(b=>{if(buckets[b]==null)return;const gap=buckets[b]-(cell[b]||0);if(gap>0&&flex>0){const u=Math.min(gap,flex);cell[b]=(cell[b]||0)+u;flex-=u;}});
+  return cell;
+}
+function moduleStat(module,inv){
+  let T=0,O=0; const t=DATA[module].t;
+  for(const role of Object.keys(t)){const c=ownedCells(module,role,inv);for(const [b,need] of Object.entries(t[role])){T+=need;O+=Math.min(c[b]||0,need);}}
+  return {T,O,gap:T-O};
+}
+
+// ═══ 렌더 ═══
+const $=id=>document.getElementById(id);
+const dot=(c,acc)=>`<span class="chip ${acc?'accent':''}" style="background:var(--c-${c})"></span>`;
+
+function renderShop(){
+  const done=[...bought].filter(id=>ALLBUY.find(x=>x.id===id)).length;
+  const doneQty=ALLBUY.filter(it=>bought.has(it.id)).reduce((s,it)=>s+it.q,0);
+  let h=`<div class="prog"><div class="lab"><span>구매 진행</span><span><b>${doneQty}</b> / ${buyTotal}~${buyTotal+3}점</span></div>
+    <div class="bar"><i style="width:${Math.round(doneQty/(buyTotal+3)*100)}%"></i></div></div>`;
+  BUY.forEach(grp=>{
+    const gd=grp.items.every(it=>bought.has(it.id));
+    h+=`<div class="grp"><div class="ghead"><span class="nm">${grp.g}</span><span class="brk">· ${grp.brk}</span><span class="cnt">${gd?'✓ 완료':''}</span></div>`;
+    grp.items.forEach(it=>{
+      const on=bought.has(it.id);
+      h+=`<div class="row ${on?'done':''}" data-buy="${it.id}">
+        ${dot(it.color,it.acc)}<span class="cname">${it.cname}</span>
+        <span class="type">${it.type}${it.note?`<small>${it.note}</small>`:''}</span>
+        <span class="q">×${it.q}</span>
+        <span class="check">✓</span></div>`;
+    });
+    h+=`</div>`;
+  });
+  $('v-shop').innerHTML=h;
+  $('v-shop').querySelectorAll('[data-buy]').forEach(el=>el.onclick=()=>{
+    const id=el.dataset.buy; bought.has(id)?bought.delete(id):bought.add(id); save(); renderShop();
+  });
+}
+
+function renderDash(){
+  const inv=effInv();
+  let T=0,O=0;
+  const cards=Object.keys(DATA).map(id=>{
+    const s=moduleStat(id,inv); T+=s.T; O+=s.O;
+    const pct=Math.round(s.O/s.T*100);
+    const m=DATA[id];
+    return `<div class="mcard" data-mod="${id}">
+      <div class="h"><span class="nm">${m.name}</span><span class="tag">격식 ${m.formality}</span>
+        <span class="tg ${s.gap>0?'gap':'full'}">${s.gap>0?'부족 '+s.gap:'충족'}</span></div>
+      <div class="mbar"><i style="width:${Math.max(3,pct)}%"></i></div>
+      <div class="pal">${m.pal.base.map(c=>dot(c)).join('')}</div>
+    </div>`;
+  }).join('');
+  $('v-dash').innerHTML=`
+    <div class="stats">
+      <div class="stat"><div class="k">목표</div><div class="v">${T}</div></div>
+      <div class="stat have"><div class="k">보유</div><div class="v">${O}</div></div>
+      <div class="stat gap"><div class="k">부족</div><div class="v">${T-O}</div></div>
+    </div>
+    <h2 class="sec">모듈 (탭하면 상세)</h2>${cards}`;
+  $('v-dash').querySelectorAll('[data-mod]').forEach(el=>el.onclick=()=>openDetail(el.dataset.mod));
+}
+
+function openDetail(mid){
+  const inv=effInv(), m=DATA[mid], s=moduleStat(mid,inv);
+  let rows='';
+  for(const role of Object.keys(m.t)){
+    const c=ownedCells(mid,role,inv);
+    const cells=SEASONS.filter(([b])=>m.t[role][b]!=null).map(([b,kb])=>{
+      const need=m.t[role][b],o=Math.min(c[b]||0,need);
+      const cls=o>=need?'full':'gap';
+      return `<div class="cell ${cls} ${b==='summer'?'summer':''}"><div class="cs">${kb}</div><div class="cv">${o}/${need}</div></div>`;
+    }).join('');
+    rows+=`<div class="drow"><div class="rn">${ROLE_KO[role]||role}</div><div class="cells">${cells}</div></div>`;
+  }
+  $('v-detail').innerHTML=`<button class="back" onclick="setView('dash')">← 옷장</button>
+    <h2 class="sec">${m.name} · 격식 ${m.formality} · <span class="${s.gap>0?'':''}">보유 ${s.O}/${s.T}</span></h2>
+    <div class="pal" style="margin-bottom:12px">${m.pal.base.map(c=>dot(c)).concat(m.pal.accent.map(c=>dot(c,1))).join('')}</div>
+    ${rows}`;
+  setView('detail');
+}
+
+function renderGlobal(){
+  const inv=effInv();
+  // 중복
+  const byRC={}; inv.forEach(g=>{const k=`${normRole(g)}|${g.color}`;(byRC[k]??=[]).push(g);});
+  const dup=Object.entries(byRC).map(([k,gs])=>({k,mods:[...new Set(gs.map(g=>g.module))]})).filter(x=>x.mods.length>=2);
+  const dupH=dup.length?dup.map(d=>{const[r,c]=d.k.split('|');
+    return `<div class="grow warn">${dot(c)}<div style="flex:1"><b>${ROLE_KO[r]||r}·${KO[c]}</b></div>${d.mods.map(m=>`<span class="pill mod">${MODNAME[m]}</span>`).join('')}<span class="pill warn">중복</span></div>`;}).join(''):'<div class="empty">중복 없음</div>';
+  // 처분
+  const retire=INV.filter(g=>g.cond==='RETIRE');
+  const retH=retire.length?retire.map(g=>`<div class="grow">${dot(g.color)}<div style="flex:1"><b>${g.name}</b> <span class="muted">${MODNAME[g.module]}</span></div><span class="pill gap">처분</span></div>`).join(''):'<div class="empty">없음</div>';
+  $('v-global').innerHTML=`
+    <h2 class="sec">⚠ 중복 경보 <span class="muted" style="font-weight:400">(같은 역할·색이 여러 모듈)</span></h2>${dupH}
+    <h2 class="sec" style="margin-top:16px">🗑 처분 대상</h2>${retH}
+    <h2 class="sec" style="margin-top:16px">🔁 빌림 · 💤 데드스톡</h2>
+    <div class="empty">착용 로그 누적 후 표시 (앱에서 착용 기록 시작하면 활성화)</div>
+    <button class="resetbtn" onclick="if(confirm('구매 체크를 모두 초기화할까요?')){bought.clear();save();renderShop();renderDash();renderGlobal();}">구매 체크 초기화</button>`;
+}
+
+// ═══ 네비 ═══
+function setView(v){
+  document.querySelectorAll('.view').forEach(x=>x.classList.remove('on'));
+  $('v-'+v).classList.add('on');
+  document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
+  const titles={shop:'🛒 여름 구매 리스트',dash:'📊 내 옷장',detail:'옷장 상세',global:'🌐 정리·전역'};
+  $('title').textContent=titles[v]||'TIDY';
+  window.scrollTo(0,0);
+}
+window.setView=setView;
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{const v=b.dataset.v;if(v==='dash')renderDash();if(v==='global')renderGlobal();setView(v);});
+
+// init
+renderShop(); renderDash(); renderGlobal();
+
+// PWA: 오프라인·홈화면 설치 (호스팅(https) 환경에서만 활성)
+if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catch(()=>{}); }
+</script>
+</body>
+</html>
