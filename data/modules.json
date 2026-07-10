@@ -8,6 +8,7 @@
     { "id": "SUIT",     "name": "정장",          "desc": "격식 있는 자리",              "location": "", "formalityDefault": 5, "kind": "activity" },
     { "id": "WEEKEND",  "name": "주말 외출",     "desc": "캐주얼 외출",                 "location": "", "formalityDefault": 3, "kind": "activity" },
     { "id": "HOMEWEAR", "name": "홈웨어",        "desc": "집·라운지",                   "location": "", "formalityDefault": 1, "kind": "activity" },
-    { "id": "INNER",    "name": "이너/언더웨어", "desc": "모든 모듈의 공유 베이스",     "location": "", "formalityDefault": 1, "kind": "base" }
+    { "id": "INNER",    "name": "이너/언더웨어", "desc": "모든 모듈의 공유 베이스",     "location": "", "formalityDefault": 1, "kind": "base" },
+    { "id": "INBOX",    "name": "인박스",        "desc": "미배정 임시함 — 집에 있는 옷을 담아 어느 모듈로 갈지 검토(배정/처분)", "location": "", "formalityDefault": 0, "kind": "staging" }
   ]
 }

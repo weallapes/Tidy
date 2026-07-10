@@ -16,10 +16,10 @@ TIDY/                         ← 이 폴더를 레포 루트로 push
 ├── icon.svg                 앱 아이콘
 ├── .nojekyll                Jekyll 비활성 (정적 그대로 서빙)
 ├── .gitignore
+├── docs/00~13-*.md          (선택) 설계·구매 문서 14개
 ├── data/                    (선택) 원본 데이터 — 앱은 임베드라 런타임에 불필요
 ├── prototype/tidy.mjs       (선택) 알고리즘 프로토타입
-├── ui/*.mockup.html         (선택) 개별 화면 목업 (설계 참고용)
-└── 00~13-*.md               (선택) 설계·구매 문서
+└── ui/*.mockup.html         (선택) 개별 화면 목업 (설계 참고용)
 ```
 
 > **앱 실행에 꼭 필요한 것**: `index.html · manifest.webmanifest · sw.js · icon.svg · .nojekyll`

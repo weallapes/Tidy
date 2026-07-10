@@ -111,6 +111,17 @@
   nav button .ic{font-size:19px;line-height:1}
   nav button.on{color:var(--accent)}
   .empty{color:var(--faint);font-size:13px;padding:10px 2px}
+  .addbox{display:flex;gap:8px;margin-bottom:14px}
+  .tinput{flex:1;background:var(--panel-2);border:1px solid var(--border);border-radius:10px;padding:11px 13px;color:var(--text);font-size:14px}
+  .tinput:focus{outline:none;border-color:var(--accent)}
+  .addbtn{background:var(--accent);color:#0f1115;border:none;border-radius:10px;padding:0 16px;font-weight:800;font-size:14px;cursor:pointer}
+  .ibrow{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:11px 12px;margin-bottom:8px}
+  .ibrow .nm{font-weight:700;font-size:14px}
+  .ibchips{display:flex;gap:5px;margin-top:6px;flex-wrap:wrap}
+  .ibacts{display:flex;gap:6px;margin-top:9px}
+  .ibbtn{flex:1;border:1px solid var(--border);background:var(--panel-2);color:var(--text);border-radius:9px;padding:8px 0;font-size:12px;font-weight:700;cursor:pointer}
+  .ibbtn.ok{background:rgba(63,185,80,.16);color:#7ee787;border-color:transparent}
+  .ibbtn.del{background:var(--danger-bg);color:var(--danger);border-color:transparent}
 </style>
 </head>
 <body>
@@ -124,12 +135,14 @@
   <div class="view on" id="v-shop"></div>
   <div class="view" id="v-dash"></div>
   <div class="view" id="v-detail"></div>
+  <div class="view" id="v-inbox"></div>
   <div class="view" id="v-global"></div>
 </div>
 
 <nav>
   <button class="on" data-v="shop"><span class="ic">🛒</span>쇼핑</button>
   <button data-v="dash"><span class="ic">📊</span>옷장</button>
+  <button data-v="inbox"><span class="ic">📥</span>인박스</button>
   <button data-v="global"><span class="ic">🌐</span>정리</button>
 </nav>
 
@@ -159,9 +172,9 @@ const INV=[
   {name:'나이키 덩크',module:'WORKOUT',role:'SHOES',season:'ALL_SEASON',color:'BLACK',cond:'GOOD'},
   {name:'써코니 러닝화',module:'WORKOUT',role:'SHOES',season:'ALL_SEASON',color:'GRAY',cond:'GOOD'},
   {name:'아식스 러닝화(낡음)',module:'WORKOUT',role:'SHOES',season:'ALL_SEASON',color:'GRAY',cond:'RETIRE',active:false},
-  {name:'컬럼비아 등산화',module:'HIKING',role:'SHOES',season:'ALL_SEASON',color:'BROWN',cond:'GOOD'},
-  {name:'몽벨 하드쉘',module:'HIKING',role:'OUTER',season:'ALL_SEASON',color:'GRAY',cond:'GOOD'},
-  {name:'블랙다이아 하드쉘',module:'HIKING',role:'OUTER',season:'ALL_SEASON',color:'RED',cond:'GOOD'},
+  {name:'컬럼비아 등산화',module:'HIKING',role:'SHOES',season:'ALL_SEASON',color:'BROWN',cond:'GOOD',weather:['RAIN']},
+  {name:'몽벨 하드쉘',module:'HIKING',role:'OUTER',season:'ALL_SEASON',color:'GRAY',cond:'GOOD',weather:['RAIN','WIND']},
+  {name:'블랙다이아 하드쉘',module:'HIKING',role:'OUTER',season:'ALL_SEASON',color:'RED',cond:'GOOD',weather:['RAIN','WIND']},
   {name:'다크그레이 조거',module:'HIKING',role:'BOTTOM',season:'ALL_SEASON',color:'GRAY',cond:'GOOD'},
   {name:'그레이 정장자켓',module:'SUIT',role:'OUTER',season:'ALL_SEASON',color:'GRAY',cond:'GOOD'},
   {name:'그레이 정장바지',module:'SUIT',role:'BOTTOM',season:'ALL_SEASON',color:'GRAY',cond:'GOOD'},
@@ -212,6 +225,11 @@ const BUY=[
     {id:'t3',color:'NAVY',cname:'네이비',type:'넥타이',note:'격식',q:1,module:'SUIT',role:'TIE',bk:'allseason'},
     {id:'t4',color:'BLACK',cname:'블랙',type:'가죽 벨트',note:'',q:1,module:'SUIT',role:null,bk:null},
   ]},
+  {g:'우천 장비 (공용)',brk:'모듈 교차 공용',items:[
+    {id:'r1',color:'BLACK',cname:'블랙',type:'장우산',note:'모든 모듈 공용',q:1,module:null,role:null,bk:null},
+    {id:'r2',color:'BLACK',cname:'블랙',type:'접이 우산',note:'가방 상비',q:1,module:null,role:null,bk:null},
+    {id:'r3',color:'BLACK',cname:'블랙',type:'레인부츠/방수 신발',note:'일상 우천',q:1,module:null,role:null,bk:null},
+  ]},
 ];
 const ALLBUY=BUY.flatMap(g=>g.items);
 const buyTotal=ALLBUY.reduce((s,it)=>s+it.q,0);
@@ -220,6 +238,22 @@ const buyTotal=ALLBUY.reduce((s,it)=>s+it.q,0);
 const KEY='tidy_bought_v1';
 let bought=new Set(JSON.parse(localStorage.getItem(KEY)||'[]'));
 const save=()=>localStorage.setItem(KEY,JSON.stringify([...bought]));
+// 인박스(미배정 검토함) + 배정 완료(옷장 편입)
+let inbox=JSON.parse(localStorage.getItem('tidy_inbox_v1')||'[]');
+let added=JSON.parse(localStorage.getItem('tidy_added_v1')||'[]');
+const saveInbox=()=>localStorage.setItem('tidy_inbox_v1',JSON.stringify(inbox));
+const saveAdded=()=>localStorage.setItem('tidy_added_v1',JSON.stringify(added));
+let seq=Date.now();
+
+// ── 자동 추론 (이름 키워드 → 모듈·역할·계절) ──
+const MOD_KW={회사:'UNIFORM',유니폼:'UNIFORM',근무:'UNIFORM',등산:'HIKING',트레킹:'HIKING',아웃도어:'HIKING',헬스:'WORKOUT',러닝:'WORKOUT',운동:'WORKOUT',짐:'WORKOUT',정장:'SUIT',수트:'SUIT',예복:'SUIT',드레스셔츠:'SUIT',주말:'WEEKEND',데이트:'WEEKEND',캐주얼:'WEEKEND',잠옷:'HOMEWEAR',실내:'HOMEWEAR',홈웨어:'HOMEWEAR',속옷:'INNER',내복:'INNER',양말:'INNER'};
+const ROLE_KW={셔츠:'TOP',티:'TOP',반팔:'TOP',니트:'TOP',맨투맨:'TOP',후드:'TOP',폴로:'TOP',바지:'BOTTOM',팬츠:'BOTTOM',청바지:'BOTTOM',슬랙스:'BOTTOM',반바지:'BOTTOM',쇼츠:'BOTTOM',치노:'BOTTOM',조거:'BOTTOM',자켓:'OUTER',코트:'OUTER',패딩:'OUTER',가디건:'OUTER',셸:'OUTER',바람막이:'OUTER',운동화:'SHOES',구두:'SHOES',스니커즈:'SHOES',부츠:'SHOES',신발:'SHOES',로퍼:'SHOES',슬리퍼:'SHOES'};
+const SEASON_KW=[[/(린넨|반팔|반바지|메시|쿨)/,'SUMMER'],[/(기모|패딩|울|두꺼|플리스|다운)/,'WINTER'],[/(가디건|트렌치|얇은|간절기)/,'SHOULDER']];
+const matchKW=(name,dict)=>{for(const k in dict)if(name.includes(k))return dict[k];return null;};
+function inferItem(name){
+  let season='ALL_SEASON'; for(const [re,s] of SEASON_KW)if(re.test(name)){season=s;break;}
+  return {module:matchKW(name,MOD_KW)||null, role:matchKW(name,ROLE_KW)||'TOP', season};
+}
 
 // ═══ 카운팅 ═══
 function normRole(g){
@@ -228,12 +262,12 @@ function normRole(g){
   return g.role;
 }
 const qtyOf=g=>g.qty||1;
-// 실효 보유 = 기존 보유(active) + 구매완료 항목
+// 실효 보유 = 기존 보유(active) + 구매완료 + 인박스에서 배정 완료
 function effInv(){
   const base=INV.filter(g=>g.active!==false);
   const boughtG=ALLBUY.filter(it=>bought.has(it.id)&&it.role).map(it=>({
     module:it.module,role:it.role,season:it.bk==='summer'?'SUMMER':'ALL_SEASON',color:it.color,cond:'NEW',qty:it.q,_buy:1}));
-  return base.concat(boughtG);
+  return base.concat(boughtG, added.filter(g=>g.module&&g.module!=='INBOX'));
 }
 function ownedCells(module,role,inv){
   const buckets=(DATA[module]?.t[role])||{};
@@ -335,12 +369,55 @@ function renderGlobal(){
   // 처분
   const retire=INV.filter(g=>g.cond==='RETIRE');
   const retH=retire.length?retire.map(g=>`<div class="grow">${dot(g.color)}<div style="flex:1"><b>${g.name}</b> <span class="muted">${MODNAME[g.module]}</span></div><span class="pill gap">처분</span></div>`).join(''):'<div class="empty">없음</div>';
+  // ☔ 비 대비 커버리지 (날씨 축) — 활동 모듈별 방수 아이템 유무
+  const actMods=Object.keys(DATA).filter(id=>id!=='INNER');
+  const rainH=actMods.map(id=>{
+    const rainy=inv.filter(g=>g.module===id&&(g.weather||[]).includes('RAIN'));
+    const ok=rainy.length>0;
+    return `<div class="grow ${ok?'':'warn'}"><span style="font-size:15px;flex:none">${ok?'✓':'☔'}</span>
+      <div style="flex:1"><b>${MODNAME[id]}</b> <span class="muted">${ok?rainy.map(g=>g.name).join(', '):'방수 아이템 없음'}</span></div>
+      <span class="pill ${ok?'mod':'warn'}">${ok?'대비':'공용 우산 필요'}</span></div>`;
+  }).join('');
   $('v-global').innerHTML=`
     <h2 class="sec">⚠ 중복 경보 <span class="muted" style="font-weight:400">(같은 역할·색이 여러 모듈)</span></h2>${dupH}
+    <h2 class="sec" style="margin-top:16px">☔ 비 대비 커버리지 <span class="muted" style="font-weight:400">(방수 아이템 보유 모듈)</span></h2>${rainH}
+    <div class="empty" style="padding-top:4px">방수 없는 모듈은 공용 우천 장비(우산·레인부츠)로 커버 — 신발처럼 모듈 교차 공용</div>
     <h2 class="sec" style="margin-top:16px">🗑 처분 대상</h2>${retH}
     <h2 class="sec" style="margin-top:16px">🔁 빌림 · 💤 데드스톡</h2>
     <div class="empty">착용 로그 누적 후 표시 (앱에서 착용 기록 시작하면 활성화)</div>
     <button class="resetbtn" onclick="if(confirm('구매 체크를 모두 초기화할까요?')){bought.clear();save();renderShop();renderDash();renderGlobal();}">구매 체크 초기화</button>`;
+}
+
+// ═══ 인박스 (미배정 검토) ═══
+const SEASON_KO2={SUMMER:'여름',WINTER:'겨울',SHOULDER:'간절기',ALL_SEASON:'사철'};
+const CYCLE=['UNIFORM','WEEKEND','WORKOUT','HIKING','SUIT','HOMEWEAR','INNER',null];
+function renderInbox(){
+  const assignedN=added.filter(g=>g.module&&g.module!=='INBOX').length;
+  let h=`<div class="prog"><div class="lab"><span>인박스 검토</span><span>대기 <b>${inbox.length}</b> · 배정 <b>${assignedN}</b></span></div>
+    <div class="bar"><i style="width:${inbox.length+assignedN?Math.round(assignedN/(inbox.length+assignedN)*100):0}%"></i></div></div>
+    <div class="addbox"><input id="inboxName" class="tinput" placeholder="집에 있는 옷 이름 (예: 네이비 반팔티)"><button class="addbtn" id="addBtn">추가</button></div>
+    <div class="empty" style="padding:0 2px 10px">이름 넣으면 모듈·역할·계절을 자동 제안 → 맞으면 <b style="color:#7ee787">배정</b>, 아니면 <b style="color:var(--danger)">처분</b>. ↻로 모듈 변경.</div>`;
+  if(!inbox.length) h+=`<div class="empty">인박스가 비어 있어요.</div>`;
+  inbox.forEach(it=>{
+    const modName=it.module?MODNAME[it.module]:'미정';
+    h+=`<div class="ibrow">
+      <div class="nm">${it.name}</div>
+      <div class="ibchips"><span class="pill ${it.module?'mod':'warn'}">${modName}</span>
+        <span class="pill">${ROLE_KO[it.role]||it.role}</span>
+        <span class="pill">${SEASON_KO2[it.season]||'사철'}</span></div>
+      <div class="ibacts">
+        <button class="ibbtn cyc" data-id="${it.id}">↻ 모듈</button>
+        <button class="ibbtn ok" data-id="${it.id}">배정</button>
+        <button class="ibbtn del" data-id="${it.id}">처분</button>
+      </div></div>`;
+  });
+  $('v-inbox').innerHTML=h;
+  const inp=$('inboxName');
+  $('addBtn').onclick=()=>{const n=inp.value.trim();if(!n)return;const inf=inferItem(n);inbox.push({id:'ib'+(++seq),name:n,...inf});saveInbox();renderInbox();};
+  inp.onkeydown=e=>{if(e.key==='Enter')$('addBtn').click();};
+  $('v-inbox').querySelectorAll('.cyc').forEach(b=>b.onclick=()=>{const it=inbox.find(x=>x.id===b.dataset.id);const i=CYCLE.indexOf(it.module);it.module=CYCLE[(i+1)%CYCLE.length];saveInbox();renderInbox();});
+  $('v-inbox').querySelectorAll('.ok').forEach(b=>b.onclick=()=>{const it=inbox.find(x=>x.id===b.dataset.id);if(!it.module){alert('먼저 ↻로 모듈을 지정하세요');return;}added.push({...it,color:'GRAY',cond:'GOOD'});inbox=inbox.filter(x=>x.id!==it.id);saveInbox();saveAdded();renderInbox();renderDash();});
+  $('v-inbox').querySelectorAll('.del').forEach(b=>b.onclick=()=>{inbox=inbox.filter(x=>x.id!==b.dataset.id);saveInbox();renderInbox();});
 }
 
 // ═══ 네비 ═══
@@ -348,15 +425,15 @@ function setView(v){
   document.querySelectorAll('.view').forEach(x=>x.classList.remove('on'));
   $('v-'+v).classList.add('on');
   document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
-  const titles={shop:'🛒 여름 구매 리스트',dash:'📊 내 옷장',detail:'옷장 상세',global:'🌐 정리·전역'};
+  const titles={shop:'🛒 여름 구매 리스트',dash:'📊 내 옷장',detail:'옷장 상세',inbox:'📥 인박스 · 미배정 검토',global:'🌐 정리·전역'};
   $('title').textContent=titles[v]||'TIDY';
   window.scrollTo(0,0);
 }
 window.setView=setView;
-document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{const v=b.dataset.v;if(v==='dash')renderDash();if(v==='global')renderGlobal();setView(v);});
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{const v=b.dataset.v;if(v==='dash')renderDash();if(v==='global')renderGlobal();if(v==='inbox')renderInbox();setView(v);});
 
 // init
-renderShop(); renderDash(); renderGlobal();
+renderShop(); renderDash(); renderInbox(); renderGlobal();
 
 // PWA: 오프라인·홈화면 설치 (호스팅(https) 환경에서만 활성)
 if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catch(()=>{}); }

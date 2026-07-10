@@ -60,6 +60,7 @@ function register(input) {
     lastWornAt: input.lastWornAt ?? null,
     acquiredAt: input.acquiredAt ?? '2026-07-06',
     borrowCount: input.borrowCount ?? 0,
+    weather: input.weather ?? [],   // 날씨 능력 태그 (RAIN/WIND/COLD/HOT_HUMID)
     active: true,
   };
   if (!g.colors.length) g.colors = ['WHITE'];
@@ -114,6 +115,21 @@ function auditModule(inventory) {
       gap: mTarget - mOwned, rows, unmatched });
   }
   return report;
+}
+
+// ── 비 대비 커버리지 (01-design §1.7b): 각 활성 모듈에 방수 아우터/신발이 있나
+function rainReadiness(inventory) {
+  return modules.map(m => {
+    const rainy = inventory.filter(g => g.active && g.module === m.id && (g.weather || []).includes('RAIN'));
+    const hasOuter = rainy.some(g => g.role === 'OUTER');
+    const hasShoes = rainy.some(g => g.role === 'SHOES');
+    return { id: m.id, name: m.name, ready: rainy.length > 0, hasOuter, hasShoes, items: rainy };
+  });
+}
+
+// ── "비 오는 날" 질의 (모듈 + 방수 필터)
+function rainOutfit(inventory, module) {
+  return inventory.filter(g => g.active && g.module === module && (g.weather || []).includes('RAIN'));
 }
 
 // ── 색상 배정 (04 §4.2 · 70/20/10)
@@ -270,6 +286,16 @@ function run(inventory) {
   for (const c of cp.candidates) {
     console.log(`  → [${c.action}] ${c.g.name} (${c.g.condition}, ${c.idle}일 미착용)`);
   }
+
+  // ── 비 대비 커버리지 (날씨 축) ──
+  const rr = rainReadiness(inventory);
+  console.log('\n── ☔ 비 대비 커버리지 (rainReadiness) ──');
+  for (const m of rr) {
+    const mark = m.ready ? '✓' : '⚠ 방수 아이템 없음';
+    const detail = m.ready ? `(${m.items.map(g => g.name).join(', ')})` : '';
+    console.log(`  ${m.name.padEnd(7)} ${mark} ${detail}`);
+  }
+  console.log('  ↳ 대책: 방수 없는 모듈은 "공용 우천 장비(우산·레인부츠)"로 커버 (신발처럼 모듈 교차 공용)');
 }
 
 // ── 데모: 보유 옷 3벌 등록 후 실행 (module-detail 목업과 동일) ──
@@ -284,7 +310,7 @@ const inventory = [
   // 데드스톡 (정장, 오래 안 입음)
   register({ name: '남색 정장 셋',       moduleHint: 'SUIT', role: 'SUITSET', season: 'ALL_SEASON', condition: 'GOOD', color: '곤색', wearCount: 1, lastWornAt: '2024-11-01', acquiredAt: '2023-05-01' }),
   // 손상된 등산화 (오래 안 씀 + DAMAGED)
-  register({ name: '낡은 등산화',        moduleHint: 'HIKING', role: 'SHOES', season: 'ALL_SEASON', condition: 'DAMAGED', color: '카키', wearCount: 15, lastWornAt: '2024-10-01', acquiredAt: '2021-03-01' }),
+  register({ name: '낡은 등산화',        moduleHint: 'HIKING', role: 'SHOES', season: 'ALL_SEASON', condition: 'DAMAGED', color: '카키', wearCount: 15, lastWornAt: '2024-10-01', acquiredAt: '2021-03-01', weather: ['RAIN'] }),
   // 사철 청바지 (ALL_SEASON) — 커버리지 규칙 시연: 주말 하의 계절 gap을 유연하게 채움
   register({ name: '인디고 청바지',      moduleHint: 'WEEKEND', role: 'BOTTOM', season: 'ALL_SEASON', condition: 'GOOD', color: '곤색', wearCount: 25, lastWornAt: '2026-07-02', acquiredAt: '2025-03-01' }),
 ];

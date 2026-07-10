@@ -119,6 +119,7 @@
       "wearCount": 0,
       "borrowCount": 0,
       "active": true,
+      "weather": ["RAIN"],
       "tags": ["방수"],
       "unconfirmed": []
     },
@@ -134,6 +135,7 @@
       "wearCount": 0,
       "borrowCount": 0,
       "active": true,
+      "weather": ["RAIN", "WIND"],
       "tags": ["셸"],
       "unconfirmed": []
     },
@@ -149,6 +151,7 @@
       "wearCount": 0,
       "borrowCount": 0,
       "active": true,
+      "weather": ["RAIN", "WIND"],
       "tags": ["셸", "시인성accent"],
       "unconfirmed": []
     },
