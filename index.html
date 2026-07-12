@@ -101,7 +101,8 @@
 
   /* detail */
   .back{color:var(--accent);font-size:13px;font-weight:700;background:none;border:none;padding:0;margin-bottom:10px;cursor:pointer}
-  .drow{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:11px 13px;margin-bottom:8px}
+  .drow{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:11px 13px;margin-bottom:8px;cursor:pointer;transition:.12s}
+  .drow:active{transform:scale(.99);border-color:var(--accent)}
   .drow .rn{font-weight:700;font-size:13px;margin-bottom:8px}
   .cells{display:flex;gap:6px;flex-wrap:wrap}
   .cell{flex:1;min-width:60px;text-align:center;background:var(--panel-2);border:1px solid var(--border);border-radius:9px;padding:7px 4px}
@@ -154,6 +155,7 @@
   <div class="view on" id="v-shop"></div>
   <div class="view" id="v-dash"></div>
   <div class="view" id="v-detail"></div>
+  <div class="view" id="v-role"></div>
   <div class="view" id="v-inbox"></div>
   <div class="view" id="v-global"></div>
 </div>
@@ -179,6 +181,7 @@ const SEASON_FILTERS=[{id:'ALL',label:'전체',icon:'🗓'},{id:'SHOULDER',label
 let seasonFilter='ALL';
 let seasonMenuOpen=false;
 let currentDetailMod=null;
+let currentDetailRole=null;
 // 선택한 계절 버킷 + 사철(allseason)만 허용. 전체 선택 시 null(제한 없음)
 const allowBuckets=f=>f==='ALL'?null:new Set([SEASON_BUCKET[f],'allseason']);
 
@@ -326,10 +329,12 @@ function normRole(g){
 const qtyOf=g=>g.qty||1;
 // 실효 보유 = 기존 보유(active) + 구매완료 + 인박스에서 배정 완료
 function effInv(){
-  const base=INV.filter(g=>g.active!==false);
+  const base=INV.filter(g=>g.active!==false).map(g=>({...g,_src:'inv'}));
   const boughtG=ALLBUY.filter(it=>bought.has(it.id)&&it.role).map(it=>({
-    module:it.module,role:it.role,season:it.bk==='summer'?'SUMMER':'ALL_SEASON',color:it.color,cond:'NEW',qty:it.q,_buy:1}));
-  return base.concat(boughtG, added.filter(g=>g.module&&g.module!=='INBOX'));
+    module:it.module,role:it.role,season:it.bk==='summer'?'SUMMER':'ALL_SEASON',color:it.color,cond:'NEW',qty:it.q,
+    name:`${it.cname} ${it.type}`,note:it.note,_src:'buy'}));
+  const addedG=added.filter(g=>g.module&&g.module!=='INBOX').map(g=>({...g,_src:'added'}));
+  return base.concat(boughtG, addedG);
 }
 function ownedCells(module,role,inv){
   const buckets=(DATA[module]?.t[role])||{};
@@ -449,14 +454,47 @@ function openDetail(mid){
       const cls=o>=need?'full':'gap';
       return `<div class="cell ${cls} ${b==='summer'?'summer':''}"><div class="cs">${kb}</div><div class="cv">${o}/${need}</div></div>`;
     }).join('');
-    rows+=`<div class="drow"><div class="rn">${ROLE_KO[role]||role}</div><div class="cells">${cells}</div></div>`;
+    rows+=`<div class="drow" data-role="${role}"><div class="rn">${ROLE_KO[role]||role} <span class="muted" style="font-weight:400;font-size:11px">옷 보기 ›</span></div><div class="cells">${cells}</div></div>`;
   }
   if(!rows) rows=`<div class="empty">${filterLabel}엔 해당하는 목표가 없어요.</div>`;
   $('v-detail').innerHTML=`<button class="back" onclick="setView('dash')">← 옷장</button>
     <h2 class="sec">${m.name} · 격식 ${m.formality} · 보유 ${s.O}/${s.T} <span class="muted" style="font-weight:400">· ${filterLabel}</span></h2>
     <div class="pal" style="margin-bottom:12px">${m.pal.base.map(c=>dot(c)).concat(m.pal.accent.map(c=>dot(c,1))).join('')}</div>
     ${rows}`;
+  $('v-detail').querySelectorAll('[data-role]').forEach(el=>el.onclick=()=>openRoleItems(mid,el.dataset.role));
   setView('detail');
+}
+
+// 역할별 실제 아이템 목록 (모듈 상세 → 역할 탭)
+function roleItems(module,role,inv){
+  const allow=allowBuckets(seasonFilter);
+  return inv.filter(g=>g.module===module&&normRole(g)===role&&(!allow||allow.has(bucket(g.season))));
+}
+function openRoleItems(mid,role){
+  currentDetailMod=mid; currentDetailRole=role;
+  const inv=effInv(), m=DATA[mid];
+  const items=roleItems(mid,role,inv);
+  const filterLabel=SEASON_FILTERS.find(f=>f.id===seasonFilter).label;
+  const SRC_KO={inv:'보유',buy:'구매완료',added:'인박스 배정'};
+  let h=`<button class="back" onclick="openDetail('${mid}')">← ${m.name}</button>
+    <h2 class="sec">${m.name} · ${ROLE_KO[role]||role} <span class="muted" style="font-weight:400">· ${filterLabel} · ${items.length}개</span></h2>`;
+  if(!items.length) h+=`<div class="empty">이 조건에 해당하는 옷이 없어요.</div>`;
+  items.forEach(g=>{
+    const label=g.name||`${KO[g.color]||g.color} ${ROLE_KO[role]||role}`;
+    h+=`<div class="ibrow">
+      <div class="nm" style="display:flex;align-items:center;gap:8px">${dot(g.color)}<span>${label}${g.qty>1?` ×${g.qty}`:''}</span></div>
+      <div class="ibchips"><span class="pill ${g._src==='inv'?'mod':''}">${SRC_KO[g._src]||'보유'}</span>
+        <span class="pill">${SEASON_KO2[g.season]||'사철'}</span><span class="pill">${g.cond||'GOOD'}</span></div>
+      ${g._src==='added'?`<div class="ibacts"><button class="ibbtn del" data-roledel="${g.id}">삭제</button></div>`:''}
+    </div>`;
+  });
+  $('v-role').innerHTML=h;
+  $('v-role').querySelectorAll('[data-roledel]').forEach(b=>b.onclick=()=>{
+    if(!confirm('옷장에서 이 항목을 삭제할까요? (되돌릴 수 없음)'))return;
+    added=added.filter(x=>x.id!==b.dataset.roledel); saveAdded();
+    openRoleItems(mid,role); renderDash(); renderInbox();
+  });
+  setView('role');
 }
 
 function renderGlobal(){
@@ -557,7 +595,8 @@ function renderSeasonBadge(){
     seasonFilter=b.dataset.sf;
     seasonMenuOpen=false; $('seasonMenu').classList.remove('on');
     renderSeasonBadge(); renderDash();
-    if($('v-detail').classList.contains('on')&&currentDetailMod) openDetail(currentDetailMod);
+    if($('v-role').classList.contains('on')&&currentDetailMod&&currentDetailRole) openRoleItems(currentDetailMod,currentDetailRole);
+    else if($('v-detail').classList.contains('on')&&currentDetailMod) openDetail(currentDetailMod);
   });
 }
 $('seasonBadge').onclick=e=>{
@@ -572,7 +611,7 @@ function setView(v){
   document.querySelectorAll('.view').forEach(x=>x.classList.remove('on'));
   $('v-'+v).classList.add('on');
   document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
-  const titles={shop:'🛒 여름 구매 리스트',dash:'📊 내 옷장',detail:'옷장 상세',inbox:'📥 인박스 · 미배정 검토',global:'🌐 정리·전역'};
+  const titles={shop:'🛒 여름 구매 리스트',dash:'📊 내 옷장',detail:'옷장 상세',role:'옷장 상세',inbox:'📥 인박스 · 미배정 검토',global:'🌐 정리·전역'};
   $('title').textContent=titles[v]||'TIDY';
   window.scrollTo(0,0);
 }
