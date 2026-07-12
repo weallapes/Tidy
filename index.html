@@ -245,6 +245,36 @@ const saveInbox=()=>localStorage.setItem('tidy_inbox_v1',JSON.stringify(inbox));
 const saveAdded=()=>localStorage.setItem('tidy_added_v1',JSON.stringify(added));
 let seq=Date.now();
 
+// ═══ 백업 · 복원 (localStorage → JSON 파일) ═══
+function exportData(){
+  const payload={version:1,exportedAt:new Date().toISOString(),bought:[...bought],inbox,added};
+  const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url; a.download=`tidy-backup-${new Date().toISOString().slice(0,10)}.json`;
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+}
+function importData(file){
+  const reader=new FileReader();
+  reader.onload=()=>{
+    let data;
+    try{ data=JSON.parse(reader.result); }
+    catch(e){ alert('올바른 백업 파일이 아닙니다 (JSON 파싱 실패).'); return; }
+    if(!data||typeof data!=='object'||!Array.isArray(data.added)||!Array.isArray(data.inbox)||!Array.isArray(data.bought)){
+      alert('올바른 TIDY 백업 파일이 아닙니다.'); return;
+    }
+    if(!confirm('현재 기기의 데이터(구매 체크·인박스·배정 옷장)를 이 백업 파일 내용으로 덮어쓸까요?')) return;
+    bought=new Set(data.bought);
+    inbox=data.inbox;
+    added=data.added;
+    save(); saveInbox(); saveAdded();
+    renderShop(); renderDash(); renderInbox(); renderGlobal();
+    alert('복원 완료');
+  };
+  reader.readAsText(file);
+}
+
 // ── 자동 추론 (이름 키워드 → 모듈·역할·계절) ──
 const MOD_KW={회사:'UNIFORM',유니폼:'UNIFORM',근무:'UNIFORM',등산:'HIKING',트레킹:'HIKING',아웃도어:'HIKING',헬스:'WORKOUT',러닝:'WORKOUT',운동:'WORKOUT',짐:'WORKOUT',정장:'SUIT',수트:'SUIT',예복:'SUIT',드레스셔츠:'SUIT',주말:'WEEKEND',데이트:'WEEKEND',캐주얼:'WEEKEND',잠옷:'HOMEWEAR',실내:'HOMEWEAR',홈웨어:'HOMEWEAR',속옷:'INNER',내복:'INNER',양말:'INNER'};
 const ROLE_KW={셔츠:'TOP',티:'TOP',반팔:'TOP',니트:'TOP',맨투맨:'TOP',후드:'TOP',폴로:'TOP',바지:'BOTTOM',팬츠:'BOTTOM',청바지:'BOTTOM',슬랙스:'BOTTOM',반바지:'BOTTOM',쇼츠:'BOTTOM',치노:'BOTTOM',조거:'BOTTOM',자켓:'OUTER',코트:'OUTER',패딩:'OUTER',가디건:'OUTER',셸:'OUTER',바람막이:'OUTER',운동화:'SHOES',구두:'SHOES',스니커즈:'SHOES',부츠:'SHOES',신발:'SHOES',로퍼:'SHOES',슬리퍼:'SHOES'};
@@ -385,7 +415,17 @@ function renderGlobal(){
     <h2 class="sec" style="margin-top:16px">🗑 처분 대상</h2>${retH}
     <h2 class="sec" style="margin-top:16px">🔁 빌림 · 💤 데드스톡</h2>
     <div class="empty">착용 로그 누적 후 표시 (앱에서 착용 기록 시작하면 활성화)</div>
-    <button class="resetbtn" onclick="if(confirm('구매 체크를 모두 초기화할까요?')){bought.clear();save();renderShop();renderDash();renderGlobal();}">구매 체크 초기화</button>`;
+    <h2 class="sec" style="margin-top:16px">💾 백업 · 복원 <span class="muted" style="font-weight:400">(이 기기의 데이터만 저장됨)</span></h2>
+    <div class="empty" style="padding-top:0 0 8px">구매 체크·인박스·배정한 옷장은 이 브라우저에만 저장돼요. 기기를 바꾸거나 저장공간이 지워지면 사라지니, 가끔 백업해두는 걸 권장합니다.</div>
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <button class="resetbtn" id="exportBtn" style="flex:1">⬇ 백업 파일 내보내기</button>
+      <button class="resetbtn" id="importBtn" style="flex:1">⬆ 백업 파일 불러오기</button>
+    </div>
+    <input type="file" id="importFile" accept="application/json" style="display:none">
+    <button class="resetbtn" style="margin-top:8px" onclick="if(confirm('구매 체크를 모두 초기화할까요?')){bought.clear();save();renderShop();renderDash();renderGlobal();}">구매 체크 초기화</button>`;
+  $('exportBtn').onclick=exportData;
+  $('importBtn').onclick=()=>$('importFile').click();
+  $('importFile').onchange=e=>{ if(e.target.files[0]) importData(e.target.files[0]); e.target.value=''; };
 }
 
 // ═══ 인박스 (미배정 검토) ═══
@@ -411,6 +451,18 @@ function renderInbox(){
         <button class="ibbtn del" data-id="${it.id}">처분</button>
       </div></div>`;
   });
+  if(added.length){
+    h+=`<h2 class="sec" style="margin-top:18px">✅ 배정 완료 <span class="muted" style="font-weight:400">· 옷장 집계에 반영됨 · ${added.length}개</span></h2>`;
+    added.forEach(it=>{
+      h+=`<div class="ibrow">
+        <div class="nm">${it.name}</div>
+        <div class="ibchips"><span class="pill mod">${MODNAME[it.module]||it.module}</span>
+          <span class="pill">${ROLE_KO[it.role]||it.role}</span>
+          <span class="pill">${SEASON_KO2[it.season]||'사철'}</span></div>
+        <div class="ibacts"><button class="ibbtn del" data-added="${it.id}">삭제</button></div>
+      </div>`;
+    });
+  }
   $('v-inbox').innerHTML=h;
   const inp=$('inboxName');
   $('addBtn').onclick=()=>{const n=inp.value.trim();if(!n)return;const inf=inferItem(n);inbox.push({id:'ib'+(++seq),name:n,...inf});saveInbox();renderInbox();};
@@ -418,6 +470,10 @@ function renderInbox(){
   $('v-inbox').querySelectorAll('.cyc').forEach(b=>b.onclick=()=>{const it=inbox.find(x=>x.id===b.dataset.id);const i=CYCLE.indexOf(it.module);it.module=CYCLE[(i+1)%CYCLE.length];saveInbox();renderInbox();});
   $('v-inbox').querySelectorAll('.ok').forEach(b=>b.onclick=()=>{const it=inbox.find(x=>x.id===b.dataset.id);if(!it.module){alert('먼저 ↻로 모듈을 지정하세요');return;}added.push({...it,color:'GRAY',cond:'GOOD'});inbox=inbox.filter(x=>x.id!==it.id);saveInbox();saveAdded();renderInbox();renderDash();});
   $('v-inbox').querySelectorAll('.del').forEach(b=>b.onclick=()=>{inbox=inbox.filter(x=>x.id!==b.dataset.id);saveInbox();renderInbox();});
+  $('v-inbox').querySelectorAll('[data-added]').forEach(b=>b.onclick=()=>{
+    if(!confirm('옷장에서 이 항목을 삭제할까요? (되돌릴 수 없음)'))return;
+    added=added.filter(x=>x.id!==b.dataset.added); saveAdded(); renderInbox(); renderDash();
+  });
 }
 
 // ═══ 네비 ═══
