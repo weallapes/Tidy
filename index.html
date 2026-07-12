@@ -32,7 +32,16 @@
     padding:14px 16px calc(12px);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
   .top .logo{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,#6ea8fe,#8e7bff);display:grid;place-items:center;font-weight:800;color:#0f1115;font-size:15px}
   .top h1{font-size:16px;font-weight:800}
-  .top .season{margin-left:auto;font-size:11px;color:var(--summer);background:var(--summer-bg);border:1px solid rgba(255,207,92,.3);padding:3px 9px;border-radius:99px;font-weight:700}
+  .seasonWrap{margin-left:auto;position:relative}
+  .top .season{font-size:11px;color:var(--summer);background:var(--summer-bg);border:1px solid rgba(255,207,92,.3);padding:3px 9px;border-radius:99px;font-weight:700;cursor:pointer;user-select:none}
+  .seasonMenu{position:absolute;top:calc(100% + 6px);right:0;background:var(--panel);border:1px solid var(--border);
+    border-radius:12px;padding:6px;display:none;flex-direction:column;gap:2px;min-width:118px;z-index:20;
+    box-shadow:0 8px 24px rgba(0,0,0,.4)}
+  .seasonMenu.on{display:flex}
+  .seasonMenu button{background:none;border:none;color:var(--text);text-align:left;padding:8px 10px;border-radius:8px;
+    font-size:13px;font-weight:600;cursor:pointer}
+  .seasonMenu button:active{background:var(--panel-2)}
+  .seasonMenu button.on{background:rgba(110,168,254,.16);color:#9cc2ff}
   .view{padding:14px 16px;display:none}
   .view.on{display:block}
   h2.sec{font-size:14px;color:var(--muted);margin:4px 0 10px;display:flex;align-items:center;gap:8px}
@@ -136,7 +145,10 @@
   <div class="top">
     <div class="logo">T</div>
     <h1 id="title">TIDY</h1>
-    <span class="season">☀ 여름</span>
+    <div class="seasonWrap">
+      <span class="season" id="seasonBadge"></span>
+      <div class="seasonMenu" id="seasonMenu"></div>
+    </div>
   </div>
 
   <div class="view on" id="v-shop"></div>
@@ -160,6 +172,15 @@ const ROLE_KO={TOP:'상의',BOTTOM:'하의',OUTER:'아우터',SHOES:'신발',SUI
 const MODNAME={UNIFORM:'유니폼',HIKING:'등산',WORKOUT:'운동',SUIT:'정장',WEEKEND:'주말 외출',HOMEWEAR:'홈웨어',INNER:'이너/언더'};
 const SEASONS=[['summer','여름'],['winter','겨울'],['shoulder','간절기'],['allseason','공용']];
 const bucket=s=>({SUMMER:'summer',WINTER:'winter',SHOULDER:'shoulder',SPRING:'shoulder',FALL:'shoulder',ALL_SEASON:'allseason'}[s]||'allseason');
+
+// ═══ 계절 필터 (옷장 탭 상단 배지) ═══
+const SEASON_BUCKET={SUMMER:'summer',WINTER:'winter',SHOULDER:'shoulder'};
+const SEASON_FILTERS=[{id:'ALL',label:'전체',icon:'🗓'},{id:'SHOULDER',label:'봄/가을',icon:'🍂'},{id:'SUMMER',label:'여름',icon:'☀'},{id:'WINTER',label:'겨울',icon:'❄'}];
+let seasonFilter='ALL';
+let seasonMenuOpen=false;
+let currentDetailMod=null;
+// 선택한 계절 버킷 + 사철(allseason)만 허용. 전체 선택 시 null(제한 없음)
+const allowBuckets=f=>f==='ALL'?null:new Set([SEASON_BUCKET[f],'allseason']);
 
 const DATA={
   UNIFORM:{name:'유니폼',formality:3,pal:{base:['WHITE','NAVY','GRAY'],secondary:['BLACK'],accent:[]},t:{TOP:{summer:6,winter:5,shoulder:2},BOTTOM:{summer:2,winter:2,shoulder:1},OUTER:{winter:1,shoulder:1},SHOES:{allseason:1}}},
@@ -323,9 +344,15 @@ function ownedCells(module,role,inv){
   ['summer','winter','shoulder'].forEach(b=>{if(buckets[b]==null)return;const gap=buckets[b]-(cell[b]||0);if(gap>0&&flex>0){const u=Math.min(gap,flex);cell[b]=(cell[b]||0)+u;flex-=u;}});
   return cell;
 }
-function moduleStat(module,inv){
-  let T=0,O=0; const t=DATA[module].t;
-  for(const role of Object.keys(t)){const c=ownedCells(module,role,inv);for(const [b,need] of Object.entries(t[role])){T+=need;O+=Math.min(c[b]||0,need);}}
+function moduleStat(module,inv,filter='ALL'){
+  let T=0,O=0; const t=DATA[module].t; const allow=allowBuckets(filter);
+  for(const role of Object.keys(t)){
+    const c=ownedCells(module,role,inv);
+    for(const [b,need] of Object.entries(t[role])){
+      if(allow&&!allow.has(b))continue;
+      T+=need;O+=Math.min(c[b]||0,need);
+    }
+  }
   return {T,O,gap:T-O};
 }
 
@@ -384,15 +411,16 @@ function renderShop(){
 
 function renderDash(){
   const inv=effInv();
+  const filterLabel=SEASON_FILTERS.find(f=>f.id===seasonFilter).label;
   let T=0,O=0;
   const cards=Object.keys(DATA).map(id=>{
-    const s=moduleStat(id,inv); T+=s.T; O+=s.O;
-    const pct=Math.round(s.O/s.T*100);
-    const m=DATA[id];
+    const s=moduleStat(id,inv,seasonFilter); T+=s.T; O+=s.O;
+    const m=DATA[id], noTarget=s.T===0;
+    const pct=noTarget?0:Math.round(s.O/s.T*100);
     return `<div class="mcard" data-mod="${id}">
       <div class="h"><span class="nm">${m.name}</span><span class="tag">격식 ${m.formality}</span>
-        <span class="tg ${s.gap>0?'gap':'full'}">${s.gap>0?'부족 '+s.gap:'충족'}</span></div>
-      <div class="mbar"><i style="width:${Math.max(3,pct)}%"></i></div>
+        <span class="tg ${noTarget?'':s.gap>0?'gap':'full'}">${noTarget?filterLabel+' 목표 없음':s.gap>0?'부족 '+s.gap:'충족'}</span></div>
+      ${noTarget?`<div class="empty" style="padding:2px 0 0">이 계절엔 해당하는 구매 목표가 없어요.</div>`:`<div class="mbar"><i style="width:${Math.max(3,pct)}%"></i></div>`}
       <div class="pal">${m.pal.base.map(c=>dot(c)).join('')}</div>
     </div>`;
   }).join('');
@@ -402,24 +430,30 @@ function renderDash(){
       <div class="stat have"><div class="k">보유</div><div class="v">${O}</div></div>
       <div class="stat gap"><div class="k">부족</div><div class="v">${T-O}</div></div>
     </div>
-    <h2 class="sec">모듈 (탭하면 상세)</h2>${cards}`;
+    <h2 class="sec">모듈 (탭하면 상세) <span class="muted" style="font-weight:400">· ${filterLabel} 기준</span></h2>${cards}`;
   $('v-dash').querySelectorAll('[data-mod]').forEach(el=>el.onclick=()=>openDetail(el.dataset.mod));
 }
 
 function openDetail(mid){
-  const inv=effInv(), m=DATA[mid], s=moduleStat(mid,inv);
+  currentDetailMod=mid;
+  const inv=effInv(), m=DATA[mid], s=moduleStat(mid,inv,seasonFilter);
+  const allow=allowBuckets(seasonFilter);
+  const filterLabel=SEASON_FILTERS.find(f=>f.id===seasonFilter).label;
   let rows='';
   for(const role of Object.keys(m.t)){
     const c=ownedCells(mid,role,inv);
-    const cells=SEASONS.filter(([b])=>m.t[role][b]!=null).map(([b,kb])=>{
+    const seasonEntries=SEASONS.filter(([b])=>m.t[role][b]!=null&&(!allow||allow.has(b)));
+    if(!seasonEntries.length)continue;
+    const cells=seasonEntries.map(([b,kb])=>{
       const need=m.t[role][b],o=Math.min(c[b]||0,need);
       const cls=o>=need?'full':'gap';
       return `<div class="cell ${cls} ${b==='summer'?'summer':''}"><div class="cs">${kb}</div><div class="cv">${o}/${need}</div></div>`;
     }).join('');
     rows+=`<div class="drow"><div class="rn">${ROLE_KO[role]||role}</div><div class="cells">${cells}</div></div>`;
   }
+  if(!rows) rows=`<div class="empty">${filterLabel}엔 해당하는 목표가 없어요.</div>`;
   $('v-detail').innerHTML=`<button class="back" onclick="setView('dash')">← 옷장</button>
-    <h2 class="sec">${m.name} · 격식 ${m.formality} · <span class="${s.gap>0?'':''}">보유 ${s.O}/${s.T}</span></h2>
+    <h2 class="sec">${m.name} · 격식 ${m.formality} · 보유 ${s.O}/${s.T} <span class="muted" style="font-weight:400">· ${filterLabel}</span></h2>
     <div class="pal" style="margin-bottom:12px">${m.pal.base.map(c=>dot(c)).concat(m.pal.accent.map(c=>dot(c,1))).join('')}</div>
     ${rows}`;
   setView('detail');
@@ -512,6 +546,27 @@ function renderInbox(){
   });
 }
 
+// ═══ 계절 필터 배지 ═══
+function renderSeasonBadge(){
+  const cur=SEASON_FILTERS.find(f=>f.id===seasonFilter);
+  $('seasonBadge').textContent=`${cur.icon} ${cur.label}`;
+  $('seasonMenu').innerHTML=SEASON_FILTERS.map(f=>
+    `<button data-sf="${f.id}" class="${f.id===seasonFilter?'on':''}">${f.icon} ${f.label}</button>`).join('');
+  $('seasonMenu').querySelectorAll('[data-sf]').forEach(b=>b.onclick=e=>{
+    e.stopPropagation();
+    seasonFilter=b.dataset.sf;
+    seasonMenuOpen=false; $('seasonMenu').classList.remove('on');
+    renderSeasonBadge(); renderDash();
+    if($('v-detail').classList.contains('on')&&currentDetailMod) openDetail(currentDetailMod);
+  });
+}
+$('seasonBadge').onclick=e=>{
+  e.stopPropagation();
+  seasonMenuOpen=!seasonMenuOpen;
+  $('seasonMenu').classList.toggle('on',seasonMenuOpen);
+};
+document.addEventListener('click',()=>{ if(seasonMenuOpen){seasonMenuOpen=false;$('seasonMenu').classList.remove('on');} });
+
 // ═══ 네비 ═══
 function setView(v){
   document.querySelectorAll('.view').forEach(x=>x.classList.remove('on'));
@@ -525,7 +580,7 @@ window.setView=setView;
 document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{const v=b.dataset.v;if(v==='dash')renderDash();if(v==='global')renderGlobal();if(v==='inbox')renderInbox();setView(v);});
 
 // init
-renderShop(); renderDash(); renderInbox(); renderGlobal();
+renderSeasonBadge(); renderShop(); renderDash(); renderInbox(); renderGlobal();
 
 // PWA: 오프라인·홈화면 설치 (호스팅(https) 환경에서만 활성)
 if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catch(()=>{}); }
