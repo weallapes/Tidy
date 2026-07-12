@@ -45,7 +45,8 @@
   .bar>i{display:block;height:100%;background:linear-gradient(90deg,#6ea8fe,#8e7bff);border-radius:99px;transition:width .3s}
 
   .grp{margin-bottom:16px}
-  .ghead{display:flex;align-items:center;gap:8px;margin:0 2px 8px}
+  .ghead{display:flex;align-items:center;gap:8px;margin:0 2px 8px;cursor:pointer}
+  .ghead .chev{color:var(--faint);font-size:10px;width:9px;flex:none}
   .ghead .nm{font-size:14px;font-weight:700}
   .ghead .brk{color:var(--faint);font-size:12px}
   .ghead .cnt{margin-left:auto;font-size:11px;font-weight:800;color:var(--gap)}
@@ -55,6 +56,9 @@
   .row:active{transform:scale(.99)}
   .row.done{opacity:.5}
   .row.done .type,.row.done .cname{text-decoration:line-through}
+  .row.skip{opacity:.4}
+  .row.skip .type,.row.skip .cname{text-decoration:line-through}
+  .row.skip .check{visibility:hidden}
   .chip{width:22px;height:22px;border-radius:6px;border:1px solid rgba(255,255,255,.18);flex:none}
   .chip.accent{border-radius:50%}
   .cname{font-weight:700;font-size:13px;width:56px;flex:none}
@@ -63,7 +67,10 @@
   .q{font-weight:800;font-size:15px;color:var(--gap);min-width:34px;text-align:right}
   .check{width:24px;height:24px;border-radius:7px;border:2px solid var(--border);flex:none;display:grid;place-items:center;font-size:14px;color:transparent}
   .row.done .check{background:var(--good);border-color:var(--good);color:#0f1115}
-  .row.done .q{color:var(--faint)}
+  .row.done .q,.row.skip .q{color:var(--faint)}
+  .skipbtn{width:24px;height:24px;border-radius:7px;border:1px solid var(--border);background:var(--panel-2);
+    color:var(--faint);font-size:13px;flex:none;cursor:pointer;display:grid;place-items:center;padding:0}
+  .row.skip .skipbtn{color:var(--accent);border-color:var(--accent);background:rgba(110,168,254,.14)}
 
   /* dashboard */
   .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
@@ -232,12 +239,16 @@ const BUY=[
   ]},
 ];
 const ALLBUY=BUY.flatMap(g=>g.items);
-const buyTotal=ALLBUY.reduce((s,it)=>s+it.q,0);
 
 // ═══ 상태 (localStorage) ═══
 const KEY='tidy_bought_v1';
 let bought=new Set(JSON.parse(localStorage.getItem(KEY)||'[]'));
 const save=()=>localStorage.setItem(KEY,JSON.stringify([...bought]));
+// 제외(보류) — 사지 않기로 한 항목. 진행률·그룹 완료 계산에서 빠짐
+const SKIP_KEY='tidy_skip_v1';
+let skipped=new Set(JSON.parse(localStorage.getItem(SKIP_KEY)||'[]'));
+const saveSkip=()=>localStorage.setItem(SKIP_KEY,JSON.stringify([...skipped]));
+let shopGroupOpen={}; // grp.g → true/false. 미지정 시 기본값(완료 그룹만 접힘) 사용
 // 인박스(미배정 검토함) + 배정 완료(옷장 편입)
 let inbox=JSON.parse(localStorage.getItem('tidy_inbox_v1')||'[]');
 let added=JSON.parse(localStorage.getItem('tidy_added_v1')||'[]');
@@ -323,26 +334,51 @@ const $=id=>document.getElementById(id);
 const dot=(c,acc)=>`<span class="chip ${acc?'accent':''}" style="background:var(--c-${c})"></span>`;
 
 function renderShop(){
-  const done=[...bought].filter(id=>ALLBUY.find(x=>x.id===id)).length;
-  const doneQty=ALLBUY.filter(it=>bought.has(it.id)).reduce((s,it)=>s+it.q,0);
-  let h=`<div class="prog"><div class="lab"><span>구매 진행</span><span><b>${doneQty}</b> / ${buyTotal}~${buyTotal+3}점</span></div>
-    <div class="bar"><i style="width:${Math.round(doneQty/(buyTotal+3)*100)}%"></i></div></div>`;
+  const relevantAll=ALLBUY.filter(it=>!skipped.has(it.id));
+  const effTotal=relevantAll.reduce((s,it)=>s+it.q,0);
+  const doneQty=relevantAll.filter(it=>bought.has(it.id)).reduce((s,it)=>s+it.q,0);
+  const pct=effTotal?Math.round(doneQty/effTotal*100):100;
+  let h=`<div class="prog"><div class="lab"><span>구매 진행</span><span><b>${doneQty}</b> / ${effTotal}점${skipped.size?` <span class="muted">(제외 ${skipped.size})</span>`:''}</span></div>
+    <div class="bar"><i style="width:${pct}%"></i></div></div>`;
   BUY.forEach(grp=>{
-    const gd=grp.items.every(it=>bought.has(it.id));
-    h+=`<div class="grp"><div class="ghead"><span class="nm">${grp.g}</span><span class="brk">· ${grp.brk}</span><span class="cnt">${gd?'✓ 완료':''}</span></div>`;
-    grp.items.forEach(it=>{
-      const on=bought.has(it.id);
-      h+=`<div class="row ${on?'done':''}" data-buy="${it.id}">
+    const relevant=grp.items.filter(it=>!skipped.has(it.id));
+    const doneN=relevant.filter(it=>bought.has(it.id)).length;
+    const gd=relevant.length===0||doneN===relevant.length;
+    const isOpen=shopGroupOpen[grp.g]!==undefined?shopGroupOpen[grp.g]:!gd;
+    h+=`<div class="grp"><div class="ghead" data-grp="${grp.g}">
+      <span class="chev">${isOpen?'▾':'▸'}</span>
+      <span class="nm">${grp.g}</span><span class="brk">· ${grp.brk}</span>
+      <span class="cnt">${gd?'✓ 완료':`${doneN}/${relevant.length}`}</span></div>`;
+    if(isOpen) grp.items.forEach(it=>{
+      const on=bought.has(it.id), sk=skipped.has(it.id);
+      h+=`<div class="row ${on?'done':''} ${sk?'skip':''}" data-buy="${it.id}">
         ${dot(it.color,it.acc)}<span class="cname">${it.cname}</span>
         <span class="type">${it.type}${it.note?`<small>${it.note}</small>`:''}</span>
         <span class="q">×${it.q}</span>
+        <button class="skipbtn" data-skip="${it.id}" title="${sk?'제외 취소':'안 사기(제외)'}">${sk?'↺':'⋯'}</button>
         <span class="check">✓</span></div>`;
     });
     h+=`</div>`;
   });
   $('v-shop').innerHTML=h;
   $('v-shop').querySelectorAll('[data-buy]').forEach(el=>el.onclick=()=>{
-    const id=el.dataset.buy; bought.has(id)?bought.delete(id):bought.add(id); save(); renderShop();
+    const id=el.dataset.buy; if(skipped.has(id))return;
+    bought.has(id)?bought.delete(id):bought.add(id); save(); renderShop();
+  });
+  $('v-shop').querySelectorAll('[data-skip]').forEach(el=>el.onclick=e=>{
+    e.stopPropagation();
+    const id=el.dataset.skip;
+    if(skipped.has(id)) skipped.delete(id);
+    else{ skipped.add(id); if(bought.has(id)){bought.delete(id);save();} }
+    saveSkip(); renderShop();
+  });
+  $('v-shop').querySelectorAll('[data-grp]').forEach(el=>el.onclick=()=>{
+    const g=el.dataset.grp, grp=BUY.find(x=>x.g===g);
+    const relevant=grp.items.filter(it=>!skipped.has(it.id));
+    const gd=relevant.length===0||relevant.every(it=>bought.has(it.id));
+    const currentOpen=shopGroupOpen[g]!==undefined?shopGroupOpen[g]:!gd;
+    shopGroupOpen[g]=!currentOpen;
+    renderShop();
   });
 }
 
